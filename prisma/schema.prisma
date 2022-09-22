@@ -14,23 +14,30 @@ generator erd {
 }
 
 model User {
-    id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     /// Storing  SHA-256 hashed password
-    password      String ///@db.Char(128)
+    password             String? ///@db.Char(128)
+    salt                 String?
+    iteration            Int?
     /// Max name part length can be 50, add check constraint in migration
-    firstName     String
-    middleName    String?
-    lastName      String
-    /// Max name email length can be 350, add check constraint in migration
-    email         String    @unique
-    emailVerified DateTime?
-    image         String?
+    name                 String?
+    // firstName            String?
+    // middleName           String?
+    // lastName             String?
+    dob                  DateTime?
+    /// Max email length can be 350, add check constraint in migration
+    email                String?   @unique
+    emailVerified        DateTime?
+    image                String?
+    dateCreated          DateTime  @default(now())
+    dateUpdated          DateTime  @updatedAt
+    primaryPhoneNumber   String?
+    secondaryPhoneNumber String?
 
     sessions            Session[]     @relation("Using")
     Review              Review[]      @relation("Wrote")
     Question            Question[]    @relation("Asked")
     Answer              Answer[]      @relation("Given")
-    Product             Product[]     @relation("SoldBy")
     Cart                Cart?         @relation("Have")
     ProductView         ProductView[] @relation("Viewed")
     Action              Action[]      @relation("Took")
@@ -39,26 +46,44 @@ model User {
     Address             Address[]     @relation("LocatedAt")
     ItemBought          ItemBought[]  @relation("BoughtBy")
     Store               Store[]       @relation("Owns")
-    SelfWishList        WishList[]    @relation("Created")
-    OtherPeopleWishList WishList?     @relation("CanAccess", fields: [wishListId], references: [id])
-    wishListId          String?       @db.Uuid
+    SelfWishList        Wishlist[]    @relation("Created")
+    OtherPeopleWishList Wishlist[]    @relation("CanAccess")
     Shared              Share[]       @relation("Shared")
     AccessedShared      Share[]       @relation("Accessed")
+    accounts            Account[]     @relation("BelongsTo")
 }
 
-model WishList {
+model Account {
+    id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    userId            String  @db.Uuid
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String? @db.Text
+    access_token      String? @db.Text
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String? @db.Text
+    session_state     String?
+    user              User    @relation("BelongsTo", fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([provider, providerAccountId])
+}
+
+model Wishlist {
     id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     ownerId        String    @db.Uuid
     owner          User      @relation("Created", fields: [ownerId], references: [id])
     otherUsers     User[]    @relation("CanAccess")
     products       Product[] @relation("InWishList")
-    boughtProducts Product[] @relation("Bought")
+    boughtProducts Product[] @relation("BoughtWishlist")
 }
 
 model Share {
     id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     pid              String   @db.Uuid
-    product          Product  @relation("Shared", fields: [pid], references: [id])
+    product          Product  @relation("SharedProduct", fields: [pid], references: [id])
     sharerIdentifier String   @db.Uuid
     sharerUuid       String?  @db.Uuid
     sharer           User     @relation("Shared", fields: [userId], references: [id])
@@ -75,6 +100,14 @@ model Session {
     user         User     @relation("Using", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
+model VerificationToken {
+    identifier String
+    token      String   @unique
+    expires    DateTime
+
+    @@unique([identifier, token])
+}
+
 model Brand {
     id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     name     String    @unique
@@ -89,10 +122,12 @@ model Store {
     manager     User      @relation("Owns", fields: [userId], references: [id])
     name        String
     description String
-    product     Product[] @relation("Sells")
+    dateCreated DateTime
+    dateUpdated DateTime
+    products    Product[] @relation("Sells")
     stags       String[]
     tags        Tags[]    @relation("StoreTag")
-    Review      Review[]  @relation("For")
+    Reviews     Review[]  @relation("For")
 }
 
 model Review {
@@ -194,7 +229,7 @@ model TechnicalDetails {
 // Query to get product for a tag will be fast but query to get tags of a product will be slower
 model Tags {
     // id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    key              String     @id @unique
+    key              String     @id
     value            String?
     entityIdentifier Int
     brands           Brand[]    @relation("BrandTag")
@@ -204,12 +239,12 @@ model Tags {
 }
 
 model Product {
-    id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    sellerID String @db.Uuid
-    name     String
-    price    Float
+    id    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name  String
+    price Float
 
-    user                User              @relation("SoldBy", fields: [sellerID], references: [id])
+    dateCreated         DateTime
+    dateUpdated         DateTime
     images              String[]
     reviews             Review[]          @relation("Of")
     Question            Question[]        @relation("Queries")
@@ -235,8 +270,8 @@ model Product {
     productCart          Cart[]                 @relation("currentProducts")
     savedProductCart     Cart[]                 @relation("savedProducts")
     boughtProducts       Cart[]                 @relation("boughtProducts")
-    Category             Category               @relation("Of", fields: [categoryKey], references: [id])
-    categoryKey          String                 @db.Uuid
+    Category             Category?              @relation("Of", fields: [categoryKey], references: [id])
+    categoryKey          String?                @db.Uuid
     ProductView          ProductView[]          @relation("GotViewed")
     Store                Store                  @relation("Sells", fields: [storeId], references: [id])
     storeId              String                 @db.Uuid
@@ -247,11 +282,12 @@ model Product {
     PastWarehouse        Warehouse?             @relation("storedInPast", fields: [PastWarehouseId], references: [id])
     PastWarehouseId      String?                @db.Uuid
     ProductReviewOverall ProductReviewOverall[] @relation("OverallReview")
-    WishList             WishList?              @relation("InWishList", fields: [wishListId], references: [id])
+    Wishlist             Wishlist?              @relation("InWishList", fields: [wishListId], references: [id])
     wishListId           String?                @db.Uuid
-    BoughtWishList       WishList?              @relation("Bought", fields: [BoughtWishListId], references: [id])
+    BoughtWishList       Wishlist?              @relation("BoughtWishlist", fields: [BoughtWishListId], references: [id])
     BoughtWishListId     String?                @db.Uuid
-    Share                Share[]                @relation("Shared")
+    Share                Share[]                @relation("SharedProduct")
+    userId               String?                @db.Uuid
 }
 
 model Cart {

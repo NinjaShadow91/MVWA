@@ -1,24 +1,48 @@
 -- CreateTable
 CREATE TABLE "User" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "password" TEXT NOT NULL,
-    "firstName" TEXT NOT NULL,
+    "password" TEXT,
+    "salt" TEXT,
+    "iteration" INTEGER,
+    "firstName" TEXT,
     "middleName" TEXT,
-    "lastName" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
+    "lastName" TEXT,
+    "age" INTEGER,
+    "email" TEXT,
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
-    "wishListId" UUID,
+    "dateCreated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "dateUpdated" TIMESTAMP(3) NOT NULL,
+    "primaryPhoneNumber" TEXT,
+    "secondaryPhoneNumber" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "WishList" (
+CREATE TABLE "Account" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Wishlist" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "ownerId" UUID NOT NULL,
 
-    CONSTRAINT "WishList_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Wishlist_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -44,6 +68,13 @@ CREATE TABLE "Session" (
 );
 
 -- CreateTable
+CREATE TABLE "VerificationToken" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "Brand" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
@@ -58,6 +89,8 @@ CREATE TABLE "Store" (
     "userId" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
+    "dateCreated" TIMESTAMP(3) NOT NULL,
+    "dateUpdated" TIMESTAMP(3) NOT NULL,
     "stags" TEXT[],
 
     CONSTRAINT "Store_pkey" PRIMARY KEY ("id")
@@ -158,9 +191,10 @@ CREATE TABLE "Tags" (
 -- CreateTable
 CREATE TABLE "Product" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "sellerID" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
+    "dateCreated" TIMESTAMP(3) NOT NULL,
+    "dateUpdated" TIMESTAMP(3) NOT NULL,
     "images" TEXT[],
     "paymentMethod" INTEGER NOT NULL,
     "giftOptionAvailable" BOOLEAN NOT NULL,
@@ -171,12 +205,13 @@ CREATE TABLE "Product" (
     "ptags" TEXT[],
     "brandId" UUID NOT NULL,
     "isVariant" BOOLEAN NOT NULL,
-    "categoryKey" UUID NOT NULL,
+    "categoryKey" UUID,
     "storeId" UUID NOT NULL,
     "CurrentWarehouseId" UUID,
     "PastWarehouseId" UUID,
     "wishListId" UUID,
     "BoughtWishListId" UUID,
+    "userId" UUID,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
 );
@@ -356,6 +391,12 @@ CREATE TABLE "DeliveryTracker" (
 );
 
 -- CreateTable
+CREATE TABLE "_CanAccess" (
+    "A" UUID NOT NULL,
+    "B" UUID NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "_Accessed" (
     "A" UUID NOT NULL,
     "B" UUID NOT NULL
@@ -419,7 +460,16 @@ CREATE TABLE "_CampaignTag" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Brand_name_key" ON "Brand"("name");
@@ -434,9 +484,6 @@ CREATE UNIQUE INDEX "Category_key_key" ON "Category"("key");
 CREATE UNIQUE INDEX "TechnicalDetails_key_key" ON "TechnicalDetails"("key");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Tags_key_key" ON "Tags"("key");
-
--- CreateIndex
 CREATE UNIQUE INDEX "ItemBought_paymentsId_key" ON "ItemBought"("paymentsId");
 
 -- CreateIndex
@@ -447,6 +494,12 @@ CREATE UNIQUE INDEX "Employee_email_key" ON "Employee"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "DeliveryTracker_oid_key" ON "DeliveryTracker"("oid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "_CanAccess_AB_unique" ON "_CanAccess"("A", "B");
+
+-- CreateIndex
+CREATE INDEX "_CanAccess_B_index" ON "_CanAccess"("B");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_Accessed_AB_unique" ON "_Accessed"("A", "B");
@@ -509,10 +562,10 @@ CREATE UNIQUE INDEX "_CampaignTag_AB_unique" ON "_CampaignTag"("A", "B");
 CREATE INDEX "_CampaignTag_B_index" ON "_CampaignTag"("B");
 
 -- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_wishListId_fkey" FOREIGN KEY ("wishListId") REFERENCES "WishList"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "WishList" ADD CONSTRAINT "WishList_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Wishlist" ADD CONSTRAINT "Wishlist_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Share" ADD CONSTRAINT "Share_pid_fkey" FOREIGN KEY ("pid") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -560,13 +613,10 @@ ALTER TABLE "Category" ADD CONSTRAINT "Category_parentKey_fkey" FOREIGN KEY ("pa
 ALTER TABLE "TechnicalDetails" ADD CONSTRAINT "TechnicalDetails_pid_fkey" FOREIGN KEY ("pid") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_sellerID_fkey" FOREIGN KEY ("sellerID") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Product" ADD CONSTRAINT "Product_brandId_fkey" FOREIGN KEY ("brandId") REFERENCES "Brand"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryKey_fkey" FOREIGN KEY ("categoryKey") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryKey_fkey" FOREIGN KEY ("categoryKey") REFERENCES "Category"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Product" ADD CONSTRAINT "Product_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -578,10 +628,10 @@ ALTER TABLE "Product" ADD CONSTRAINT "Product_CurrentWarehouseId_fkey" FOREIGN K
 ALTER TABLE "Product" ADD CONSTRAINT "Product_PastWarehouseId_fkey" FOREIGN KEY ("PastWarehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_wishListId_fkey" FOREIGN KEY ("wishListId") REFERENCES "WishList"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_wishListId_fkey" FOREIGN KEY ("wishListId") REFERENCES "Wishlist"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_BoughtWishListId_fkey" FOREIGN KEY ("BoughtWishListId") REFERENCES "WishList"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_BoughtWishListId_fkey" FOREIGN KEY ("BoughtWishListId") REFERENCES "Wishlist"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Cart" ADD CONSTRAINT "Cart_id_fkey" FOREIGN KEY ("id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -663,6 +713,12 @@ ALTER TABLE "DeliveryTracker" ADD CONSTRAINT "DeliveryTracker_wareHouseId_fkey" 
 
 -- AddForeignKey
 ALTER TABLE "DeliveryTracker" ADD CONSTRAINT "DeliveryTracker_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CanAccess" ADD CONSTRAINT "_CanAccess_A_fkey" FOREIGN KEY ("A") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_CanAccess" ADD CONSTRAINT "_CanAccess_B_fkey" FOREIGN KEY ("B") REFERENCES "Wishlist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_Accessed" ADD CONSTRAINT "_Accessed_A_fkey" FOREIGN KEY ("A") REFERENCES "Share"("id") ON DELETE CASCADE ON UPDATE CASCADE;

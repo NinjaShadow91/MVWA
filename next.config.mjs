@@ -13,6 +13,7 @@ function defineNextConfig(config) {
 }
 
 export default defineNextConfig({
+  pageExtensions: ["page.tsx", "api.ts"],
   reactStrictMode: true,
   swcMinify: true,
   // Next.js i18n docs: https://nextjs.org/docs/advanced-features/i18n-routing
@@ -21,3 +22,7 @@ export default defineNextConfig({
     defaultLocale: "en",
   },
 });
+
+// module.exports = {
+//   pageExtensions: ["page.tsx", "api.ts"],
+// };
