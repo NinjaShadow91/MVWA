@@ -78,10 +78,6 @@ export const productRouter = createRouter()
             TechnicalDetails: true,
           },
         });
-        console.log(
-          "return ",
-          prodsWithQueryInName.concat(prodsWithQueryInDescription)
-        );
         return prodsWithQueryInName.concat(prodsWithQueryInDescription);
       } else {
         // Implement pagination
@@ -109,10 +105,6 @@ export const productRouter = createRouter()
             TechnicalDetails: true,
           },
         });
-        console.log(
-          "return ",
-          prodsWithQueryInName.concat(prodsWithQueryInDescription)
-        );
         return prodsWithQueryInName.concat(prodsWithQueryInDescription);
       }
     },

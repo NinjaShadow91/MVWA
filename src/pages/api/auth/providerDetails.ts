@@ -43,9 +43,8 @@ export const providersOfNextAuth: Provider[] = [
             64,
             "sha512"
           );
-          console.log(user, credentials.password, derivedKey.toString("hex"));
+          // console.log(user, credentials.password, derivedKey.toString("hex"));
           if (user.password === derivedKey.toString("hex")) return user;
-          console.log("ch");
         }
       }
       return null;

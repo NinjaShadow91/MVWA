@@ -1,7 +1,3 @@
-/**
- * Change the logos to url form and use next IMAGE inplace of img tag
- */
-
 import type { NextPage } from "next";
 import Head from "next/head";
 import { signOut, useSession } from "next-auth/react";

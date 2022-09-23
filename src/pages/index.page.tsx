@@ -18,7 +18,7 @@ const Home: NextPage = () => {
     },
   ]);
   const userProf = trpc.useQuery(["user.getCart"]);
-  console.log(prodDetails.data, userProf.data);
+  // console.log(prodDetails.data, userProf.data);
 
   return (
     <>

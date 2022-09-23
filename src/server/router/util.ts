@@ -42,7 +42,6 @@ export const trpcSafePrisma = async (
       err instanceof PrismaClientInitializationError ||
       err instanceof PrismaClientUnknownRequestError
     ) {
-      console.log("throwing", err);
       throwPrismaTRPCError({
         cause: err,
         message: errMessage,

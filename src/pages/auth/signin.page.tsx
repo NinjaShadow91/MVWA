@@ -1,7 +1,3 @@
-/**
- * Change the logos to url form and use next IMAGE inplace of img tag
- */
-
 import Image from "next/image";
 import type { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
@@ -22,7 +18,6 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
   const session = useSession();
   const [inputEmailError, setInputEmailError] = useState(false);
   const [inputPasswordError, setInputPasswordError] = useState(false);
-  useEffect(() => console.log(session), [session]);
   useEffect(() => {
     if (providers) {
       setOAuthProviderNumber(
@@ -76,8 +71,6 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
   }, [router]);
 
   function signnInWrapper(providerId: string) {
-    // console.log("inputerror", inputError);
-
     if (
       document.getElementById("email") &&
       document.getElementById("password")
@@ -128,7 +121,14 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
 
           <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
             <div className="bg-white px-4 shadow sm:rounded-lg sm:px-10">
-              <form className="space-y-6" action="#" method="POST">
+              <form
+                className="space-y-6"
+                action="#"
+                method="POST"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                }}
+              >
                 {errorMessage !== "" && (
                   <output
                     id="errorOutput"

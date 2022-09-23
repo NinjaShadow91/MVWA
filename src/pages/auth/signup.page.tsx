@@ -1,7 +1,3 @@
-/**
- * Change the logos to url form and use next IMAGE inplace of img tag
- */
-
 import type { GetServerSideProps, NextPage } from "next";
 import Head from "next/head";
 import { getProviders, signIn } from "next-auth/react";
@@ -43,12 +39,6 @@ const SignUp: NextPage<{ providers: Provider | null }> = ({ providers }) => {
   }, []);
 
   function signUpWrapper(providerId: string) {
-    console.log(
-      inputDOBError,
-      inputEmailError,
-      inputNameError,
-      inputPasswordError
-    );
     if (providerId === "credentials") {
       const email = (document.getElementById("email") as any).value as string;
       const password = (document.getElementById("password") as any)

@@ -102,7 +102,8 @@ model Session {
 
 model VerificationToken {
     identifier String
-    token      String   @unique
+    type       String?
+    token      String   @unique //@default(dbgenerated("gen_random_uuid()"))
     expires    DateTime
 
     @@unique([identifier, token])
