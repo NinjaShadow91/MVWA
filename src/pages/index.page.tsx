@@ -7,16 +7,24 @@ import { trpc } from "../utils/trpc";
 const Home: NextPage = () => {
   const session = useSession();
 
-  useEffect(() => console.log(session), [session]);
+  // useEffect(() => console.log(session), [session]);
 
   const prodDetails = trpc.useQuery([
-    "product.searchProduct",
-    // { id: "df940573-070a-4196-8d79-5a307e01c0e4" },
+    "product.getProductDetails",
     {
-      query: "product1",
-      filters: { priceRangeMax: 1000, priceRangeMin: 300 },
+      id: "bca586ea-bd76-4c6e-8ff7-077efb150ea0",
+      select: {
+        brand: true,
+        questions: 2,
+        answers: 2,
+      },
     },
+    // {
+    //   query: "product1",
+    //   filters: { priceRangeMax: 1000, priceRangeMin: 300 },
+    // },
   ]);
+  console.log(prodDetails);
   const userProf = trpc.useQuery(["user.getCart"]);
   // console.log(prodDetails.data, userProf.data);
 

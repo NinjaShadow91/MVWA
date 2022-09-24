@@ -20,7 +20,7 @@ model User {
     salt                 String?
     iteration            Int?
     /// Max name part length can be 50, add check constraint in migration
-    name                 String?
+    name                 String
     // firstName            String?
     // middleName           String?
     // lastName             String?
@@ -123,33 +123,33 @@ model Store {
     manager     User      @relation("Owns", fields: [userId], references: [id])
     name        String
     description String
-    dateCreated DateTime
-    dateUpdated DateTime
+    dateCreated DateTime  @default(now())
+    dateUpdated DateTime  @updatedAt
     products    Product[] @relation("Sells")
     stags       String[]
     tags        Tags[]    @relation("StoreTag")
-    Reviews     Review[]  @relation("For")
+    review      Review[]  @relation("For")
 }
 
 model Review {
-    id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    pid           String?  @db.Uuid
-    sid           String?  @db.Uuid
-    uid           String   @db.Uuid
-    createdAt     DateTime @default(now())
+    id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    pid            String?         @db.Uuid
+    sid            String?         @db.Uuid
+    uid            String          @db.Uuid
+    createdAt      DateTime        @default(now())
     /// In range of 0 to 5, using check constraint in migrate file
-    overallRating Float
-    content       String
-    media         String[]
-    containsVideo Boolean
-    containsImage Boolean
-    features      String[]
+    overallRating  Float
+    content        String
+    media          String[]
+    containsVideo  Boolean
+    containsImage  Boolean
+    features       String[]
     /// In range of 0 to 5, using check constraint in migrate file
-    featureRating Float[]
-    tags          String[]
-    user          User     @relation("Wrote", fields: [uid], references: [id])
-    product       Product? @relation("Of", fields: [pid], references: [id])
-    store         Store?   @relation("For", fields: [sid], references: [id])
+    featuresRating FeatureRating[]
+    tags           String[]
+    user           User            @relation("Wrote", fields: [uid], references: [id])
+    product        Product?        @relation("Of", fields: [pid], references: [id])
+    store          Store?          @relation("For", fields: [sid], references: [id])
 }
 
 model FeatureRating {
@@ -158,7 +158,9 @@ model FeatureRating {
     /// In range of 0 to 5, using check constraint in migrate file
     value Float
 
-    Review ProductReviewOverall @relation("Contains", fields: [rid], references: [pid])
+    review   ProductReviewOverall @relation("Contains", fields: [rid], references: [pid])
+    Review   Review?              @relation(fields: [reviewId], references: [id])
+    reviewId String?              @db.Uuid
 }
 
 model ProductReviewOverall {
@@ -175,13 +177,13 @@ model Question {
     uid       String   @db.Uuid
     pid       String   @db.Uuid
     upvotes   Int      @default(0)
-    downVotes Int      @default(0)
+    downvotes Int      @default(0)
 
     content String
 
     product Product  @relation("Queries", fields: [pid], references: [id])
     user    User     @relation("Asked", fields: [uid], references: [id])
-    Answer  Answer[] @relation("For")
+    answers Answer[] @relation("HaveAnswers")
 }
 
 model Answer {
@@ -190,12 +192,12 @@ model Answer {
     uid       String   @db.Uuid
     qid       String   @db.Uuid
     upvotes   Int      @default(0)
-    downVotes Int      @default(0)
+    downvotes Int      @default(0)
 
     content String
 
     user     User     @relation("Given", fields: [uid], references: [id])
-    question Question @relation("For", fields: [qid], references: [id])
+    question Question @relation("HaveAnswers", fields: [qid], references: [id])
 
     @@unique([uid, qid])
 }
@@ -221,8 +223,8 @@ model TechnicalDetails {
 
     // Length should be equal, even in case when description point dont have image just give a "." for that
     // Can be made as a 2d array of string
-    description      String[]
-    descriptionImage String[]
+    description       String[]
+    descriptionImages String[]
 
     product Product @relation("Got", fields: [pid], references: [id])
 }
@@ -244,14 +246,14 @@ model Product {
     name  String
     price Float
 
-    dateCreated         DateTime
-    dateUpdated         DateTime
+    dateCreated         DateTime          @default(now())
+    dateUpdated         DateTime          @updatedAt
     images              String[]
     reviews             Review[]          @relation("Of")
-    Question            Question[]        @relation("Queries")
-    paymentMethod       Int
+    questions           Question[]        @relation("Queries")
+    paymentMethods      Int
     giftOptionAvailable Boolean
-    stockAvailable      Int
+    stock               Int
     flagedForWrongInfo  Int
     ///  denotes the number of days that it can be replaced, 0 means cant be replaced
     /// same for return frame
@@ -262,7 +264,7 @@ model Product {
     tags                Tags[]            @relation("ProductTag")
     brandId             String            @db.Uuid
     brand               Brand             @relation("ManufacturedBy", fields: [brandId], references: [id])
-    TechnicalDetails    TechnicalDetails? @relation("Got")
+    technicalDetails    TechnicalDetails? @relation("Got")
 
     isVariant     Boolean
     isVariantOf   Product[] @relation("variants")
@@ -271,23 +273,23 @@ model Product {
     productCart          Cart[]                 @relation("currentProducts")
     savedProductCart     Cart[]                 @relation("savedProducts")
     boughtProducts       Cart[]                 @relation("boughtProducts")
-    Category             Category?              @relation("Of", fields: [categoryKey], references: [id])
+    category             Category?              @relation("Of", fields: [categoryKey], references: [id])
     categoryKey          String?                @db.Uuid
-    ProductView          ProductView[]          @relation("GotViewed")
-    Store                Store                  @relation("Sells", fields: [storeId], references: [id])
+    productView          ProductView[]          @relation("GotViewed")
+    store                Store                  @relation("Sells", fields: [storeId], references: [id])
     storeId              String                 @db.Uuid
-    Offer                Offer[]                @relation("HaveOffer")
-    ItemBought           ItemBought[]           @relation("Bought")
-    CurrentWarehouse     Warehouse?             @relation("currentlyStored", fields: [CurrentWarehouseId], references: [id])
-    CurrentWarehouseId   String?                @db.Uuid
-    PastWarehouse        Warehouse?             @relation("storedInPast", fields: [PastWarehouseId], references: [id])
-    PastWarehouseId      String?                @db.Uuid
-    ProductReviewOverall ProductReviewOverall[] @relation("OverallReview")
-    Wishlist             Wishlist?              @relation("InWishList", fields: [wishListId], references: [id])
+    offer                Offer[]                @relation("HaveOffer")
+    itemBought           ItemBought[]           @relation("Bought")
+    currentWarehouse     Warehouse?             @relation("currentlyStored", fields: [currentWarehouseId], references: [id])
+    currentWarehouseId   String?                @db.Uuid
+    pastWarehouse        Warehouse?             @relation("storedInPast", fields: [pastWarehouseId], references: [id])
+    pastWarehouseId      String?                @db.Uuid
+    productReviewOverall ProductReviewOverall[] @relation("OverallReview")
+    wishlist             Wishlist?              @relation("InWishList", fields: [wishListId], references: [id])
     wishListId           String?                @db.Uuid
-    BoughtWishList       Wishlist?              @relation("BoughtWishlist", fields: [BoughtWishListId], references: [id])
-    BoughtWishListId     String?                @db.Uuid
-    Share                Share[]                @relation("SharedProduct")
+    boughtWishList       Wishlist?              @relation("BoughtWishlist", fields: [boughtWishListId], references: [id])
+    boughtWishListId     String?                @db.Uuid
+    share                Share[]                @relation("SharedProduct")
     userId               String?                @db.Uuid
 }
 
