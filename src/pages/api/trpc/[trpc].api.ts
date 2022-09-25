@@ -15,22 +15,22 @@ export default createNextApiHandler({
   createContext,
   onError: ({ error, path }) => {
     if (env.NODE_ENV === "development") {
-      console.error(`❌ tRPC failed on ${path}: ${error}`);
+      console.error(`❌ tRPC failed on ${path}: ${error.message}`);
     }
-    if (error.cause instanceof PrismaClientInitializationError) {
-      error = {
-        code: "INTERNAL_SERVER_ERROR",
-        name: "ERROR",
-        message: "Something went wrong while creating your hui hui",
-      };
-    }
-    if (
-      error.code === "INTERNAL_SERVER_ERROR" ||
-      (error.code === "BAD_REQUEST" && error.cause instanceof ZodError)
-    ) {
-      // console.error(error);
-      error.message = "Something went wrong";
-      return { message: "Something went wrong" };
-    } else return error;
+    // if (error.cause instanceof PrismaClientInitializationError) {
+    //   error = {
+    //     code: "INTERNAL_SERVER_ERROR",
+    //     name: "ERROR",
+    //     message: "Something went wrong while creating your hui hui",
+    //   };
+    // }
+    // if (
+    //   error.code === "INTERNAL_SERVER_ERROR" ||
+    //   (error.code === "BAD_REQUEST" && error.cause instanceof ZodError)
+    // ) {
+    //   // console.error(error);
+    //   // error.message = "Something went wrong";
+    //   // return { message: "Something went wrong" };
+    // } else return error;
   },
 });

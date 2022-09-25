@@ -32,19 +32,24 @@ export const providersOfNextAuth: Provider[] = [
     },
     authorize: async (credentials, req) => {
       if (credentials !== null && credentials !== undefined) {
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-        if (user && user.iteration && user.salt) {
-          const derivedKey = pbkdf2Sync(
-            credentials.password,
-            user.salt,
-            user.iteration,
-            64,
-            "sha512"
-          );
-          // console.log(user, credentials.password, derivedKey.toString("hex"));
-          if (user.password === derivedKey.toString("hex")) return user;
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
+          if (user && user.iteration && user.salt) {
+            const derivedKey = pbkdf2Sync(
+              credentials.password,
+              user.salt,
+              user.iteration,
+              64,
+              "sha512"
+            );
+            // console.log(user, credentials.password, derivedKey.toString("hex"));
+            if (user.password === derivedKey.toString("hex")) return user;
+          }
+        } catch (err) {
+          // Do error handling, log ,etc.
+          return null;
         }
       }
       return null;

@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 
 import validator from "./utils";
 import ExclamationCircleIcon from "@heroicons/react/24/outline/ExclamationCircleIcon";
-import { useQuery } from "react-query";
 import { trpc } from "../../utils/trpc";
 import Modal from "../../components/Modal";
 

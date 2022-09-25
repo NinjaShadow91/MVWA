@@ -1,6 +1,7 @@
 import { createRouter } from "./context";
 import { z } from "zod";
 import * as trpc from "@trpc/server";
+import { throwPrismaTRPCError } from "./util";
 
 // import { insertData, getData } from "../db/test";
 // insertData();
@@ -145,132 +146,139 @@ export const productRouter = createRouter()
         .nullish(),
     }),
     async resolve({ input, ctx }) {
-      const { prisma } = ctx;
-      const prodDetails = await prisma.product.findUnique({
-        where: { id: input.id },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          replaceFrame: true,
-          returnFrame: true,
-          stock: true,
-          flagedForWrongInfo: true,
-          giftOptionAvailable: true,
-          paymentMethods: input.select?.paymentMethods ? true : false,
-          images: input.select?.images ? true : false,
-          category: input.select?.category
-            ? {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              }
-            : false,
-          brand: input.select?.brand
-            ? {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              }
-            : false,
-          store: input.select?.store
-            ? {
-                select: {
-                  id: true,
-                  name: true,
-                  manager: {
-                    select: {
-                      id: true,
-                      name: true,
+      try {
+        const { prisma } = ctx;
+        const prodDetails = await prisma.product.findUnique({
+          where: { id: input.id },
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            replaceFrame: true,
+            returnFrame: true,
+            stock: true,
+            flagedForWrongInfo: true,
+            giftOptionAvailable: true,
+            paymentMethods: input.select?.paymentMethods ? true : false,
+            images: input.select?.images ? true : false,
+            category: input.select?.category
+              ? {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                }
+              : false,
+            brand: input.select?.brand
+              ? {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                }
+              : false,
+            store: input.select?.store
+              ? {
+                  select: {
+                    id: true,
+                    name: true,
+                    manager: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
                     },
                   },
-                },
-              }
-            : false,
-          tags: input.select?.tags
-            ? {
-                select: {
-                  key: true,
-                  value: true,
-                },
-              }
-            : false,
-          otherVariants: input.select?.variants
-            ? {
-                select: {
-                  id: true,
-                  name: true,
-                  price: true,
-                  stock: true,
-                },
-              }
-            : false,
-          technicalDetails: input.select?.details ? true : false,
-          reviews: input.select?.reviews
-            ? {
-                select: {
-                  id: true,
-                  createdAt: true,
-                  overallRating: true,
-                  content: true,
-                  featuresRating: input.select?.featuresOfReview
-                    ? {
-                        select: {
-                          key: true,
-                          value: true,
-                        },
-                      }
-                    : false,
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
+                }
+              : false,
+            tags: input.select?.tags
+              ? {
+                  select: {
+                    key: true,
+                    value: true,
+                  },
+                }
+              : false,
+            otherVariants: input.select?.variants
+              ? {
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    stock: true,
+                  },
+                }
+              : false,
+            technicalDetails: input.select?.details ? true : false,
+            reviews: input.select?.reviews
+              ? {
+                  select: {
+                    id: true,
+                    createdAt: true,
+                    overallRating: true,
+                    content: true,
+                    featuresRating: input.select?.featuresOfReview
+                      ? {
+                          select: {
+                            key: true,
+                            value: true,
+                          },
+                        }
+                      : false,
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
                     },
                   },
-                },
-                take: input.select?.reviews,
-              }
-            : false,
-          questions: input.select?.questions
-            ? {
-                select: {
-                  id: true,
-                  content: true,
-                  upvotes: true,
-                  downvotes: true,
-                  answers: input.select.answers
-                    ? {
-                        select: {
-                          content: true,
-                          upvotes: true,
-                          downvotes: true,
-                          user: {
-                            select: {
-                              name: true,
-                              id: true,
+                  take: input.select?.reviews,
+                }
+              : false,
+            questions: input.select?.questions
+              ? {
+                  select: {
+                    id: true,
+                    content: true,
+                    upvotes: true,
+                    downvotes: true,
+                    answers: input.select.answers
+                      ? {
+                          select: {
+                            content: true,
+                            upvotes: true,
+                            downvotes: true,
+                            user: {
+                              select: {
+                                name: true,
+                                id: true,
+                              },
                             },
                           },
-                        },
-                        take: input.select.answers,
-                      }
-                    : false,
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
+                          take: input.select.answers,
+                        }
+                      : false,
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
                     },
                   },
-                },
-                take: input.select?.questions,
-              }
-            : false,
-        },
-      });
-      if (prodDetails) return { isSucess: true, data: prodDetails };
-      else {
-        return { isSucess: false };
+                  take: input.select?.questions,
+                }
+              : false,
+          },
+        });
+        if (prodDetails) return { isSucess: true, data: prodDetails };
+        else {
+          return { isSucess: false };
+        }
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the store data",
+        });
       }
     },
   })
@@ -283,14 +291,21 @@ export const productRouter = createRouter()
       price: z.number().nullish(),
     }),
     async resolve({ ctx, input }) {
-      const { price } = (await ctx.prisma.product.findUnique({
-        where: { id: input.id },
-        select: {
-          price: true,
-        },
-      })) ?? { price: null };
-      if (price) return { isPresent: true, price: price };
-      else return { isPresent: true };
+      try {
+        const { price } = (await ctx.prisma.product.findUnique({
+          where: { id: input.id },
+          select: {
+            price: true,
+          },
+        })) ?? { price: null };
+        if (price) return { isPresent: true, price: price };
+        else return { isPresent: true };
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the product data",
+        });
+      }
     },
   })
   .query("getProductStockDetails", {
@@ -302,14 +317,21 @@ export const productRouter = createRouter()
       stock: z.number().nullish(),
     }),
     async resolve({ ctx, input }) {
-      const { stock } = (await ctx.prisma.product.findUnique({
-        where: { id: input.id },
-        select: {
-          stock: true,
-        },
-      })) ?? { stock: null };
-      if (stock) return { isPresent: true, price: stock };
-      else return { isPresent: true };
+      try {
+        const { stock } = (await ctx.prisma.product.findUnique({
+          where: { id: input.id },
+          select: {
+            stock: true,
+          },
+        })) ?? { stock: null };
+        if (stock) return { isPresent: true, price: stock };
+        else return { isPresent: true };
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the product data",
+        });
+      }
     },
   })
   .query("getProductIDsOfCategory", {
@@ -322,44 +344,51 @@ export const productRouter = createRouter()
       productIDs: z.string().uuid().array().nullable(),
     }),
     async resolve({ ctx, input }) {
-      const productIDs =
-        input.id && input.key
-          ? (
-              await ctx.prisma.category.findUnique({
-                where: { id: input.id, key: input.key },
-                select: {
-                  products: { select: { id: true } },
-                },
-              })
-            )?.products.map((product) => product.id) ?? null
-          : input.id
-          ? (
-              await ctx.prisma.category.findUnique({
-                where: { id: input.id },
-                select: {
-                  products: { select: { id: true } },
-                },
-              })
-            )?.products.map((product) => product.id) ?? null
-          : input.key
-          ? (
-              await ctx.prisma.category.findUnique({
-                where: { key: input.key },
-                select: {
-                  products: { select: { id: true } },
-                },
-              })
-            )?.products.map((product) => product.id) ?? null
-          : undefined;
-      if (productIDs === null) {
-        return { isPresent: false, productIDs: productIDs };
-      } else if (productIDs === undefined) {
-        throw new trpc.TRPCError({
-          code: "BAD_REQUEST",
-          message: "Please provide either id or key",
+      try {
+        const productIDs =
+          input.id && input.key
+            ? (
+                await ctx.prisma.category.findUnique({
+                  where: { id: input.id, key: input.key },
+                  select: {
+                    products: { select: { id: true } },
+                  },
+                })
+              )?.products.map((product) => product.id) ?? null
+            : input.id
+            ? (
+                await ctx.prisma.category.findUnique({
+                  where: { id: input.id },
+                  select: {
+                    products: { select: { id: true } },
+                  },
+                })
+              )?.products.map((product) => product.id) ?? null
+            : input.key
+            ? (
+                await ctx.prisma.category.findUnique({
+                  where: { key: input.key },
+                  select: {
+                    products: { select: { id: true } },
+                  },
+                })
+              )?.products.map((product) => product.id) ?? null
+            : undefined;
+        if (productIDs === null) {
+          return { isPresent: false, productIDs: productIDs };
+        } else if (productIDs === undefined) {
+          throw new trpc.TRPCError({
+            code: "BAD_REQUEST",
+            message: "Please provide either id or key",
+          });
+        } else {
+          return { isPresent: true, productIDs: productIDs };
+        }
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the product data",
         });
-      } else {
-        return { isPresent: true, productIDs: productIDs };
       }
     },
   })
@@ -375,64 +404,75 @@ export const productRouter = createRouter()
         .nullish(),
     }),
     async resolve({ ctx, input }) {
-      // Add user personalisation
-      // const user =
-      if (input.filters) {
-        const priceRangeMax = input.filters.priceRangeMax;
-        const priceRangeMin = input.filters.priceRangeMin;
-        const query = [input.query];
-        const prodsWithQueryInName = await ctx.prisma.product.findMany({
-          where: {
-            name: { in: query },
-            price: { gte: priceRangeMin, lte: priceRangeMax },
-          },
-          select: {
-            name: true,
-            price: true,
-            technicalDetails: true,
-          },
-        });
-        const prodsWithQueryInDescription = await ctx.prisma.product.findMany({
-          where: {
-            price: { gte: priceRangeMin, lte: priceRangeMax },
-            technicalDetails: {
-              description: { hasSome: query },
+      try {
+        // Add user personalisation
+        // const user =
+        if (input.filters) {
+          const priceRangeMax = input.filters.priceRangeMax;
+          const priceRangeMin = input.filters.priceRangeMin;
+          const query = [input.query];
+          const prodsWithQueryInName = await ctx.prisma.product.findMany({
+            where: {
+              name: { in: query },
+              price: { gte: priceRangeMin, lte: priceRangeMax },
             },
-          },
-          select: {
-            name: true,
-            price: true,
-            technicalDetails: true,
-          },
-        });
-        return prodsWithQueryInName.concat(prodsWithQueryInDescription);
-      } else {
-        // Implement pagination
-        // Process query and make token remove verb, number maybe
-        const query = [input.query];
-        const prodsWithQueryInName = await ctx.prisma.product.findMany({
-          where: {
-            name: { in: query },
-          },
-          select: {
-            name: true,
-            price: true,
-            technicalDetails: true,
-          },
-        });
-        const prodsWithQueryInDescription = await ctx.prisma.product.findMany({
-          where: {
-            technicalDetails: {
-              description: { hasSome: query },
+            select: {
+              name: true,
+              price: true,
+              technicalDetails: true,
             },
-          },
-          select: {
-            name: true,
-            price: true,
-            technicalDetails: true,
-          },
+          });
+          const prodsWithQueryInDescription = await ctx.prisma.product.findMany(
+            {
+              where: {
+                price: { gte: priceRangeMin, lte: priceRangeMax },
+                technicalDetails: {
+                  description: { hasSome: query },
+                },
+              },
+              select: {
+                name: true,
+                price: true,
+                technicalDetails: true,
+              },
+            }
+          );
+          return prodsWithQueryInName.concat(prodsWithQueryInDescription);
+        } else {
+          // Implement pagination
+          // Process query and make token remove verb, number maybe
+          const query = [input.query];
+          const prodsWithQueryInName = await ctx.prisma.product.findMany({
+            where: {
+              name: { in: query },
+            },
+            select: {
+              name: true,
+              price: true,
+              technicalDetails: true,
+            },
+          });
+          const prodsWithQueryInDescription = await ctx.prisma.product.findMany(
+            {
+              where: {
+                technicalDetails: {
+                  description: { hasSome: query },
+                },
+              },
+              select: {
+                name: true,
+                price: true,
+                technicalDetails: true,
+              },
+            }
+          );
+          return prodsWithQueryInName.concat(prodsWithQueryInDescription);
+        }
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the product data",
         });
-        return prodsWithQueryInName.concat(prodsWithQueryInDescription);
       }
     },
   });

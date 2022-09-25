@@ -26,7 +26,7 @@ model User {
     // lastName             String?
     dob                  DateTime?
     /// Max email length can be 350, add check constraint in migration
-    email                String?   @unique
+    email                String    @unique
     emailVerified        DateTime?
     image                String?
     dateCreated          DateTime  @default(now())

@@ -12,9 +12,11 @@ const ValidatorRegEx = new Map<string, RegExp>([
 ]);
 
 // validator
-export default (_type: string, data: string): boolean => {
+const validator = (_type: string, data: string): boolean => {
   if (!ValidatorRegEx.has(_type))
     throw new Error(`Cant validate the type:${_type}`);
 
   return ValidatorRegEx.get(_type)!.test(data);
 };
+
+export default validator;

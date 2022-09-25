@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { trpc } from "../../utils/trpc";
-// import trpc from "../api/trpc";
 import Image from "next/image";
 
 import { LOGOS } from "./Logos";
