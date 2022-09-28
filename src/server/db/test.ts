@@ -35,9 +35,9 @@ export async function insertData() {
       giftOptionAvailable: true,
       stock: 100,
       flagedForWrongInfo: 2,
+      description: "Tesla Description",
       returnFrame: 0,
       replaceFrame: 10,
-      isVariant: false,
       store: {
         connect: {
           id: store.id,
@@ -109,6 +109,7 @@ export async function insertData() {
               {
                 name: "product1",
                 paymentMethods: 1,
+                description: "product1",
                 giftOptionAvailable: false,
                 stock: 12,
                 images: [],
@@ -116,8 +117,6 @@ export async function insertData() {
                 flagedForWrongInfo: 12,
                 returnFrame: 15,
                 ptags: [],
-                isVariant: false,
-                // description: "product1",
                 price: 100,
                 dateCreated: new Date(),
                 dateUpdated: new Date(),
@@ -154,6 +153,7 @@ export async function insertData() {
                 giftOptionAvailable: false,
                 stock: 12,
                 replaceFrame: 12,
+                description: "product2",
                 returnFrame: 15,
                 brand: {
                   create: {
@@ -161,7 +161,6 @@ export async function insertData() {
                   },
                 },
                 ptags: [],
-                isVariant: false,
                 price: 200,
                 dateCreated: new Date(),
                 dateUpdated: new Date(),
@@ -173,6 +172,7 @@ export async function insertData() {
                 flagedForWrongInfo: 16,
                 paymentMethods: 4,
                 giftOptionAvailable: false,
+                description: "product3",
                 stock: 12,
                 replaceFrame: 12,
                 returnFrame: 15,
@@ -182,7 +182,6 @@ export async function insertData() {
                   },
                 },
                 ptags: [],
-                isVariant: false,
                 dateCreated: new Date(),
                 dateUpdated: new Date(),
               },

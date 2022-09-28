@@ -36,7 +36,7 @@ export const providersOfNextAuth: Provider[] = [
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
-          if (user && user.iteration && user.salt) {
+          if (user && user.iteration && user.salt && !user.deletedAt) {
             const derivedKey = pbkdf2Sync(
               credentials.password,
               user.salt,

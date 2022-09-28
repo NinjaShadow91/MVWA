@@ -17,6 +17,7 @@ model User {
     id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     /// Storing  SHA-256 hashed password
     password             String? ///@db.Char(128)
+    lastPasswordUpdateAt DateTime? @default(now())
     salt                 String?
     iteration            Int?
     /// Max name part length can be 50, add check constraint in migration
@@ -31,25 +32,26 @@ model User {
     image                String?
     dateCreated          DateTime  @default(now())
     dateUpdated          DateTime  @updatedAt
+    deletedAt            DateTime?
     primaryPhoneNumber   String?
     secondaryPhoneNumber String?
 
     sessions            Session[]     @relation("Using")
-    Review              Review[]      @relation("Wrote")
-    Question            Question[]    @relation("Asked")
-    Answer              Answer[]      @relation("Given")
-    Cart                Cart?         @relation("Have")
-    ProductView         ProductView[] @relation("Viewed")
-    Action              Action[]      @relation("Took")
-    Complaint           Complaint[]   @relation("Registered")
-    Payments            Payments[]    @relation("Initiated")
-    Address             Address[]     @relation("LocatedAt")
-    ItemBought          ItemBought[]  @relation("BoughtBy")
-    Store               Store[]       @relation("Owns")
-    SelfWishList        Wishlist[]    @relation("Created")
-    OtherPeopleWishList Wishlist[]    @relation("CanAccess")
-    Shared              Share[]       @relation("Shared")
-    AccessedShared      Share[]       @relation("Accessed")
+    reviews             Review[]      @relation("Wrote")
+    questions           Question[]    @relation("Asked")
+    answers             Answer[]      @relation("Given")
+    cart                Cart?         @relation("Have")
+    productViews        ProductView[] @relation("Viewed")
+    actions             Action[]      @relation("Took")
+    complaints          Complaint[]   @relation("Registered")
+    payments            Payments[]    @relation("Initiated")
+    addresses           Address[]     @relation("LocatedAt")
+    orders              ItemBought[]  @relation("BoughtBy")
+    stores              Store[]       @relation("Owns")
+    selfWishList        Wishlist[]    @relation("Created")
+    otherPeopleWishList Wishlist[]    @relation("CanAccess")
+    shared              Share[]       @relation("Shared")
+    accessedShared      Share[]       @relation("Accessed")
     accounts            Account[]     @relation("BelongsTo")
 }
 
@@ -93,11 +95,12 @@ model Share {
 }
 
 model Session {
-    id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    sessionToken String   @unique
-    userId       String   @db.Uuid
-    expires      DateTime
-    user         User     @relation("Using", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    machineIdentifier String
+    sessionToken      String   @unique
+    userId            String   @db.Uuid
+    expires           DateTime
+    user              User     @relation("Using", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model VerificationToken {
@@ -118,17 +121,20 @@ model Brand {
 }
 
 model Store {
-    id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    userId      String    @db.Uuid
-    manager     User      @relation("Owns", fields: [userId], references: [id])
-    name        String
-    description String
-    dateCreated DateTime  @default(now())
-    dateUpdated DateTime  @updatedAt
-    products    Product[] @relation("Sells")
-    stags       String[]
-    tags        Tags[]    @relation("StoreTag")
-    review      Review[]  @relation("For")
+    id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    userId         String    @db.Uuid
+    manager        User      @relation("Owns", fields: [userId], references: [id])
+    name           String
+    description    String
+    images         String[]
+    contactDetails String[]
+    dateCreated    DateTime  @default(now())
+    dateUpdated    DateTime  @updatedAt
+    deletedAt      DateTime?
+    products       Product[] @relation("Sells")
+    stags          String[]
+    tags           Tags[]    @relation("StoreTag")
+    reviews        Review[]  @relation("For")
 }
 
 model Review {
@@ -209,7 +215,7 @@ model Category {
     ParentCategory Category?  @relation("child", fields: [parentKey], references: [id])
     subCategories  Category[] @relation("child")
     parentKey      String?    @db.Uuid
-    products       Product[]  @relation("Of")
+    products       Product[]  @relation("ProductsOf")
 }
 
 // Can be transfered to noSQL db as the data wont be updated and also no query will be performed other than full read
@@ -218,7 +224,7 @@ model Category {
 model TechnicalDetails {
     /// same as product id
     pid   String   @id @db.Uuid
-    key   String[] @unique
+    key   String[]
     value String[]
 
     // Length should be equal, even in case when description point dont have image just give a "." for that
@@ -246,15 +252,18 @@ model Product {
     name  String
     price Float
 
+    description         String
     dateCreated         DateTime          @default(now())
     dateUpdated         DateTime          @updatedAt
+    deletedAt           DateTime?
     images              String[]
     reviews             Review[]          @relation("Of")
     questions           Question[]        @relation("Queries")
     paymentMethods      Int
     giftOptionAvailable Boolean
     stock               Int
-    flagedForWrongInfo  Int
+    sold                Int               @default(0)
+    flagedForWrongInfo  Int               @default(0)
     ///  denotes the number of days that it can be replaced, 0 means cant be replaced
     /// same for return frame
     replaceFrame        Int
@@ -266,14 +275,13 @@ model Product {
     brand               Brand             @relation("ManufacturedBy", fields: [brandId], references: [id])
     technicalDetails    TechnicalDetails? @relation("Got")
 
-    isVariant     Boolean
     isVariantOf   Product[] @relation("variants")
     otherVariants Product[] @relation("variants")
 
     productCart          Cart[]                 @relation("currentProducts")
     savedProductCart     Cart[]                 @relation("savedProducts")
     boughtProducts       Cart[]                 @relation("boughtProducts")
-    category             Category?              @relation("Of", fields: [categoryKey], references: [id])
+    category             Category?              @relation("ProductsOf", fields: [categoryKey], references: [id])
     categoryKey          String?                @db.Uuid
     productView          ProductView[]          @relation("GotViewed")
     store                Store                  @relation("Sells", fields: [storeId], references: [id])
@@ -388,7 +396,7 @@ model Address {
     id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     city            String
     country         String
-    pincode         Int
+    pincode         String
     state           String
     uid             String?      @db.Uuid
     user            User?        @relation("LocatedAt", fields: [uid], references: [id])

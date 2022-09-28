@@ -4,11 +4,9 @@ CREATE TABLE "User" (
     "password" TEXT,
     "salt" TEXT,
     "iteration" INTEGER,
-    "firstName" TEXT,
-    "middleName" TEXT,
-    "lastName" TEXT,
-    "age" INTEGER,
-    "email" TEXT,
+    "name" TEXT NOT NULL,
+    "dob" TIMESTAMP(3),
+    "email" TEXT NOT NULL,
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
     "dateCreated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -70,6 +68,7 @@ CREATE TABLE "Session" (
 -- CreateTable
 CREATE TABLE "VerificationToken" (
     "identifier" TEXT NOT NULL,
+    "type" TEXT,
     "token" TEXT NOT NULL,
     "expires" TIMESTAMP(3) NOT NULL
 );
@@ -89,7 +88,9 @@ CREATE TABLE "Store" (
     "userId" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "dateCreated" TIMESTAMP(3) NOT NULL,
+    "images" TEXT[],
+    "contactDetails" TEXT[],
+    "dateCreated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "dateUpdated" TIMESTAMP(3) NOT NULL,
     "stags" TEXT[],
 
@@ -109,7 +110,6 @@ CREATE TABLE "Review" (
     "containsVideo" BOOLEAN NOT NULL,
     "containsImage" BOOLEAN NOT NULL,
     "features" TEXT[],
-    "featureRating" DOUBLE PRECISION[],
     "tags" TEXT[],
 
     CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
@@ -120,6 +120,7 @@ CREATE TABLE "FeatureRating" (
     "rid" UUID NOT NULL,
     "key" TEXT NOT NULL,
     "value" DOUBLE PRECISION NOT NULL,
+    "reviewId" UUID,
 
     CONSTRAINT "FeatureRating_pkey" PRIMARY KEY ("rid")
 );
@@ -139,7 +140,7 @@ CREATE TABLE "Question" (
     "uid" UUID NOT NULL,
     "pid" UUID NOT NULL,
     "upvotes" INTEGER NOT NULL DEFAULT 0,
-    "downVotes" INTEGER NOT NULL DEFAULT 0,
+    "downvotes" INTEGER NOT NULL DEFAULT 0,
     "content" TEXT NOT NULL,
 
     CONSTRAINT "Question_pkey" PRIMARY KEY ("id")
@@ -152,7 +153,7 @@ CREATE TABLE "Answer" (
     "uid" UUID NOT NULL,
     "qid" UUID NOT NULL,
     "upvotes" INTEGER NOT NULL DEFAULT 0,
-    "downVotes" INTEGER NOT NULL DEFAULT 0,
+    "downvotes" INTEGER NOT NULL DEFAULT 0,
     "content" TEXT NOT NULL,
 
     CONSTRAINT "Answer_pkey" PRIMARY KEY ("id")
@@ -174,7 +175,7 @@ CREATE TABLE "TechnicalDetails" (
     "key" TEXT[],
     "value" TEXT[],
     "description" TEXT[],
-    "descriptionImage" TEXT[],
+    "descriptionImages" TEXT[],
 
     CONSTRAINT "TechnicalDetails_pkey" PRIMARY KEY ("pid")
 );
@@ -193,24 +194,26 @@ CREATE TABLE "Product" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
-    "dateCreated" TIMESTAMP(3) NOT NULL,
+    "description" TEXT NOT NULL,
+    "dateCreated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "dateUpdated" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
     "images" TEXT[],
-    "paymentMethod" INTEGER NOT NULL,
+    "paymentMethods" INTEGER NOT NULL,
     "giftOptionAvailable" BOOLEAN NOT NULL,
-    "stockAvailable" INTEGER NOT NULL,
-    "flagedForWrongInfo" INTEGER NOT NULL,
+    "stock" INTEGER NOT NULL,
+    "sold" INTEGER NOT NULL DEFAULT 0,
+    "flagedForWrongInfo" INTEGER NOT NULL DEFAULT 0,
     "replaceFrame" INTEGER NOT NULL,
     "returnFrame" INTEGER NOT NULL,
     "ptags" TEXT[],
     "brandId" UUID NOT NULL,
-    "isVariant" BOOLEAN NOT NULL,
     "categoryKey" UUID,
     "storeId" UUID NOT NULL,
-    "CurrentWarehouseId" UUID,
-    "PastWarehouseId" UUID,
+    "currentWarehouseId" UUID,
+    "pastWarehouseId" UUID,
     "wishListId" UUID,
-    "BoughtWishListId" UUID,
+    "boughtWishListId" UUID,
     "userId" UUID,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
@@ -481,9 +484,6 @@ CREATE UNIQUE INDEX "Answer_uid_qid_key" ON "Answer"("uid", "qid");
 CREATE UNIQUE INDEX "Category_key_key" ON "Category"("key");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "TechnicalDetails_key_key" ON "TechnicalDetails"("key");
-
--- CreateIndex
 CREATE UNIQUE INDEX "ItemBought_paymentsId_key" ON "ItemBought"("paymentsId");
 
 -- CreateIndex
@@ -592,6 +592,9 @@ ALTER TABLE "Review" ADD CONSTRAINT "Review_sid_fkey" FOREIGN KEY ("sid") REFERE
 ALTER TABLE "FeatureRating" ADD CONSTRAINT "FeatureRating_rid_fkey" FOREIGN KEY ("rid") REFERENCES "ProductReviewOverall"("pid") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "FeatureRating" ADD CONSTRAINT "FeatureRating_reviewId_fkey" FOREIGN KEY ("reviewId") REFERENCES "Review"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ProductReviewOverall" ADD CONSTRAINT "ProductReviewOverall_pid_fkey" FOREIGN KEY ("pid") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -622,16 +625,16 @@ ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryKey_fkey" FOREIGN KEY ("ca
 ALTER TABLE "Product" ADD CONSTRAINT "Product_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_CurrentWarehouseId_fkey" FOREIGN KEY ("CurrentWarehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_currentWarehouseId_fkey" FOREIGN KEY ("currentWarehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_PastWarehouseId_fkey" FOREIGN KEY ("PastWarehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_pastWarehouseId_fkey" FOREIGN KEY ("pastWarehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Product" ADD CONSTRAINT "Product_wishListId_fkey" FOREIGN KEY ("wishListId") REFERENCES "Wishlist"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_BoughtWishListId_fkey" FOREIGN KEY ("BoughtWishListId") REFERENCES "Wishlist"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_boughtWishListId_fkey" FOREIGN KEY ("boughtWishListId") REFERENCES "Wishlist"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Cart" ADD CONSTRAINT "Cart_id_fkey" FOREIGN KEY ("id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

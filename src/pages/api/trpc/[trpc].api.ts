@@ -15,8 +15,10 @@ export default createNextApiHandler({
   createContext,
   onError: ({ error, path }) => {
     if (env.NODE_ENV === "development") {
-      console.error(`❌ tRPC failed on ${path}: ${error.message}`);
+      console.error(`❌ tRPC failed on ${path}: ${error}`);
     }
+    console.log(error.cause);
+
     // if (error.cause instanceof PrismaClientInitializationError) {
     //   error = {
     //     code: "INTERNAL_SERVER_ERROR",

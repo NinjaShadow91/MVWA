@@ -35,6 +35,9 @@ export const productRouter = createRouter()
           id: z.string().uuid(),
           name: z.string(),
           price: z.number(),
+          dateCreated: z.date(),
+          dateUpdated: z.date(),
+          deletedAt: z.date().nullish(),
           replaceFrame: z.number().nonnegative(),
           returnFrame: z.number().nonnegative(),
           stock: z.number().nonnegative(),
@@ -53,7 +56,7 @@ export const productRouter = createRouter()
           category: z
             .object({
               id: z.string().uuid(),
-              name: z.string(),
+              key: z.string(),
             })
             .nullish(),
           brand: z
@@ -145,7 +148,7 @@ export const productRouter = createRouter()
         .strict()
         .nullish(),
     }),
-    async resolve({ input, ctx }) {
+    resolve: async ({ input, ctx }) => {
       try {
         const { prisma } = ctx;
         const prodDetails = await prisma.product.findUnique({
@@ -156,6 +159,9 @@ export const productRouter = createRouter()
             price: true,
             replaceFrame: true,
             returnFrame: true,
+            dateCreated: true,
+            dateUpdated: true,
+            deletedAt: true,
             stock: true,
             flagedForWrongInfo: true,
             giftOptionAvailable: true,
@@ -165,7 +171,7 @@ export const productRouter = createRouter()
               ? {
                   select: {
                     id: true,
-                    name: true,
+                    key: true,
                   },
                 }
               : false,
@@ -177,20 +183,18 @@ export const productRouter = createRouter()
                   },
                 }
               : false,
-            store: input.select?.store
-              ? {
+            store: {
+              select: {
+                id: true,
+                name: true,
+                manager: {
                   select: {
                     id: true,
                     name: true,
-                    manager: {
-                      select: {
-                        id: true,
-                        name: true,
-                      },
-                    },
                   },
-                }
-              : false,
+                },
+              },
+            },
             tags: input.select?.tags
               ? {
                   select: {
@@ -242,6 +246,7 @@ export const productRouter = createRouter()
                     content: true,
                     upvotes: true,
                     downvotes: true,
+                    createdAt: true,
                     answers: input.select.answers
                       ? {
                           select: {
@@ -270,8 +275,14 @@ export const productRouter = createRouter()
               : false,
           },
         });
-        if (prodDetails) return { isSucess: true, data: prodDetails };
-        else {
+        if (
+          prodDetails &&
+          (!prodDetails.deletedAt ||
+            (ctx.session &&
+              ctx.session.user?.id === prodDetails.store.manager.id))
+        ) {
+          return { isSucess: true, data: prodDetails };
+        } else {
           return { isSucess: false };
         }
       } catch (err) {
@@ -292,14 +303,15 @@ export const productRouter = createRouter()
     }),
     async resolve({ ctx, input }) {
       try {
-        const { price } = (await ctx.prisma.product.findUnique({
+        const { price, deletedAt } = (await ctx.prisma.product.findUnique({
           where: { id: input.id },
           select: {
             price: true,
+            deletedAt: true,
           },
-        })) ?? { price: null };
-        if (price) return { isPresent: true, price: price };
-        else return { isPresent: true };
+        })) ?? { price: null, deletedAt: null };
+        if (price && !deletedAt) return { isPresent: true, price: price };
+        else return { isPresent: false };
       } catch (err) {
         throw throwPrismaTRPCError({
           cause: err,
@@ -318,13 +330,14 @@ export const productRouter = createRouter()
     }),
     async resolve({ ctx, input }) {
       try {
-        const { stock } = (await ctx.prisma.product.findUnique({
+        const { stock, deletedAt } = (await ctx.prisma.product.findUnique({
           where: { id: input.id },
           select: {
+            deletedAt: true,
             stock: true,
           },
         })) ?? { stock: null };
-        if (stock) return { isPresent: true, price: stock };
+        if (stock && !deletedAt) return { isPresent: true, price: stock };
         else return { isPresent: true };
       } catch (err) {
         throw throwPrismaTRPCError({
@@ -351,7 +364,10 @@ export const productRouter = createRouter()
                 await ctx.prisma.category.findUnique({
                   where: { id: input.id, key: input.key },
                   select: {
-                    products: { select: { id: true } },
+                    products: {
+                      where: { deletedAt: null },
+                      select: { id: true },
+                    },
                   },
                 })
               )?.products.map((product) => product.id) ?? null
@@ -360,7 +376,10 @@ export const productRouter = createRouter()
                 await ctx.prisma.category.findUnique({
                   where: { id: input.id },
                   select: {
-                    products: { select: { id: true } },
+                    products: {
+                      where: { deletedAt: null },
+                      select: { id: true },
+                    },
                   },
                 })
               )?.products.map((product) => product.id) ?? null
@@ -369,7 +388,10 @@ export const productRouter = createRouter()
                 await ctx.prisma.category.findUnique({
                   where: { key: input.key },
                   select: {
-                    products: { select: { id: true } },
+                    products: {
+                      where: { deletedAt: null },
+                      select: { id: true },
+                    },
                   },
                 })
               )?.products.map((product) => product.id) ?? null
@@ -414,6 +436,7 @@ export const productRouter = createRouter()
           const prodsWithQueryInName = await ctx.prisma.product.findMany({
             where: {
               name: { in: query },
+              deletedAt: null,
               price: { gte: priceRangeMin, lte: priceRangeMax },
             },
             select: {
@@ -425,6 +448,7 @@ export const productRouter = createRouter()
           const prodsWithQueryInDescription = await ctx.prisma.product.findMany(
             {
               where: {
+                deletedAt: null,
                 price: { gte: priceRangeMin, lte: priceRangeMax },
                 technicalDetails: {
                   description: { hasSome: query },
@@ -444,6 +468,7 @@ export const productRouter = createRouter()
           const query = [input.query];
           const prodsWithQueryInName = await ctx.prisma.product.findMany({
             where: {
+              deletedAt: null,
               name: { in: query },
             },
             select: {
@@ -455,6 +480,7 @@ export const productRouter = createRouter()
           const prodsWithQueryInDescription = await ctx.prisma.product.findMany(
             {
               where: {
+                deletedAt: null,
                 technicalDetails: {
                   description: { hasSome: query },
                 },

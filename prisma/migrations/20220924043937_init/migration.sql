@@ -1,5 +1,0 @@
--- AlterTable
-ALTER TABLE "Product" ALTER COLUMN "dateCreated" SET DEFAULT CURRENT_TIMESTAMP;
-
--- AlterTable
-ALTER TABLE "Store" ALTER COLUMN "dateUpdated" DROP DEFAULT;

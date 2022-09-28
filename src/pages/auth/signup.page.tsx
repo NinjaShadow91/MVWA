@@ -75,7 +75,10 @@ const SignUp: NextPage<{ providers: Provider | null }> = ({ providers }) => {
             },
           }
         );
-    } else signIn(providerId);
+    } else {
+      console.log(providerId);
+      signIn(providerId);
+    }
   }
 
   function validateDateLiteral(dateLiteral: string) {
