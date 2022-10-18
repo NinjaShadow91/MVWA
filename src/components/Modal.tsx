@@ -19,11 +19,12 @@ export default function Modal({
   main,
   cleanupFunc,
 }: ModalEventProp) {
+  //Check this
   useEffect(() => {
-    if (cleanupFunc !== undefined) {
+    if (cleanupFunc !== undefined && open == false) {
       return cleanupFunc();
     }
-  }, []);
+  }, [open]);
 
   return (
     <>

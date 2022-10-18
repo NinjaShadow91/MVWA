@@ -1,7 +1,7 @@
-import { createRouter } from "./context";
+import { createRouter } from "../context";
 import { z } from "zod";
 import * as trpc from "@trpc/server";
-import { throwPrismaTRPCError } from "./util";
+import { throwPrismaTRPCError } from "../util";
 
 // import { insertData, getData } from "../db/test";
 // insertData();
@@ -152,9 +152,9 @@ export const productRouter = createRouter()
       try {
         const { prisma } = ctx;
         const prodDetails = await prisma.product.findUnique({
-          where: { id: input.id },
+          where: { productId: input.id },
           select: {
-            id: true,
+            productId: true,
             name: true,
             price: true,
             replaceFrame: true,

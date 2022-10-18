@@ -1,0 +1,503 @@
+datasource db {
+    provider = "postgres"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+generator erd {
+    provider                  = "prisma-erd-generator"
+    theme                     = "forest"
+    includeRelationFromFields = true
+}
+
+model User {
+    id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    /// Storing  SHA-256 hashed password
+    password             String? ///@db.Char(128)
+    lastPasswordUpdateAt DateTime? @default(now())
+    salt                 String?
+    iteration            Int?
+    /// Max name part length can be 50, add check constraint in migration
+    name                 String
+    // firstName            String?
+    // middleName           String?
+    // lastName             String?
+    dob                  DateTime?
+    /// Max email length can be 350, add check constraint in migration
+    email                String    @unique
+    emailVerified        DateTime?
+    image                String?
+    dateCreated          DateTime  @default(now())
+    dateUpdated          DateTime  @updatedAt
+    deletedAt            DateTime?
+    primaryPhoneNumber   String?
+    secondaryPhoneNumber String?
+
+    sessions            Session[]     @relation("Using")
+    reviews             Review[]      @relation("Wrote")
+    questions           Question[]    @relation("Asked")
+    answers             Answer[]      @relation("Given")
+    cart                Cart?         @relation("Have")
+    productViews        ProductView[] @relation("Viewed")
+    actions             Action[]      @relation("Took")
+    complaints          Complaint[]   @relation("Registered")
+    payments            Payments[]    @relation("Initiated")
+    addresses           Address[]     @relation("LocatedAt")
+    orders              ItemBought[]  @relation("BoughtBy")
+    stores              Store[]       @relation("Owns")
+    selfWishList        Wishlist[]    @relation("Created")
+    otherPeopleWishList Wishlist[]    @relation("CanAccess")
+    shared              Share[]       @relation("Shared")
+    accessedShared      Share[]       @relation("Accessed")
+    accounts            Account[]     @relation("BelongsTo")
+}
+
+model Account {
+    id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    userId            String  @db.Uuid
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String? @db.Text
+    access_token      String? @db.Text
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String? @db.Text
+    session_state     String?
+    user              User    @relation("BelongsTo", fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([provider, providerAccountId])
+}
+
+model Wishlist {
+    id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    ownerId        String    @db.Uuid
+    owner          User      @relation("Created", fields: [ownerId], references: [id])
+    otherUsers     User[]    @relation("CanAccess")
+    products       Product[] @relation("InWishList")
+    boughtProducts Product[] @relation("BoughtWishlist")
+}
+
+model Share {
+    id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    pid              String   @db.Uuid
+    product          Product  @relation("SharedProduct", fields: [pid], references: [id])
+    sharerIdentifier String   @db.Uuid
+    sharerUuid       String?  @db.Uuid
+    sharer           User     @relation("Shared", fields: [userId], references: [id])
+    accessers        String[]
+    accesserUuids    User[]   @relation("Accessed")
+    userId           String   @db.Uuid
+}
+
+model Session {
+    id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    machineIdentifier String
+    sessionToken      String   @unique
+    userId            String   @db.Uuid
+    expires           DateTime
+    user              User     @relation("Using", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model VerificationToken {
+    identifier String
+    type       String?
+    token      String   @unique //@default(dbgenerated("gen_random_uuid()"))
+    expires    DateTime
+
+    @@unique([identifier, token])
+}
+
+model Brand {
+    id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name     String    @unique
+    products Product[] @relation("ManufacturedBy")
+    btags    String[]
+    tags     Tags[]    @relation("BrandTag")
+}
+
+model Store {
+    id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    userId         String    @db.Uuid
+    manager        User      @relation("Owns", fields: [userId], references: [id])
+    name           String
+    description    String
+    images         String[]
+    contactDetails String[]
+    dateCreated    DateTime  @default(now())
+    dateUpdated    DateTime  @updatedAt
+    deletedAt      DateTime?
+    products       Product[] @relation("Sells")
+    stags          String[]
+    tags           Tags[]    @relation("StoreTag")
+    reviews        Review[]  @relation("For")
+}
+
+model Review {
+    id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    pid            String?         @db.Uuid
+    sid            String?         @db.Uuid
+    uid            String          @db.Uuid
+    createdAt      DateTime        @default(now())
+    /// In range of 0 to 5, using check constraint in migrate file
+    overallRating  Float
+    content        String
+    media          String[]
+    containsVideo  Boolean
+    containsImage  Boolean
+    features       String[]
+    /// In range of 0 to 5, using check constraint in migrate file
+    featuresRating FeatureRating[]
+    tags           String[]
+    user           User            @relation("Wrote", fields: [uid], references: [id])
+    product        Product?        @relation("Of", fields: [pid], references: [id])
+    store          Store?          @relation("For", fields: [sid], references: [id])
+}
+
+model FeatureRating {
+    rid   String @id @db.Uuid
+    key   String
+    /// In range of 0 to 5, using check constraint in migrate file
+    value Float
+
+    review   ProductReviewOverall @relation("Contains", fields: [rid], references: [pid])
+    Review   Review?              @relation(fields: [reviewId], references: [id])
+    reviewId String?              @db.Uuid
+}
+
+model ProductReviewOverall {
+    pid           String          @id @db.Uuid
+    /// In range of 0 to 5, using check constraint in migrate file
+    overallRating Float
+    featureRating FeatureRating[] @relation("Contains")
+    product       Product         @relation("OverallReview", fields: [pid], references: [id])
+}
+
+model Question {
+    id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    createdAt DateTime @default(now())
+    uid       String   @db.Uuid
+    pid       String   @db.Uuid
+    upvotes   Int      @default(0)
+    downvotes Int      @default(0)
+
+    content String
+
+    product Product  @relation("Queries", fields: [pid], references: [id])
+    user    User     @relation("Asked", fields: [uid], references: [id])
+    answers Answer[] @relation("HaveAnswers")
+}
+
+model Answer {
+    id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    createdAt DateTime @default(now())
+    uid       String   @db.Uuid
+    qid       String   @db.Uuid
+    upvotes   Int      @default(0)
+    downvotes Int      @default(0)
+
+    content String
+
+    user     User     @relation("Given", fields: [uid], references: [id])
+    question Question @relation("HaveAnswers", fields: [qid], references: [id])
+
+    @@unique([uid, qid])
+}
+
+model Category {
+    id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    key            String     @unique
+    description    String?
+    ParentCategory Category?  @relation("child", fields: [parentKey], references: [id])
+    subCategories  Category[] @relation("child")
+    parentKey      String?    @db.Uuid
+    products       Product[]  @relation("ProductsOf")
+}
+
+// Can be transfered to noSQL db as the data wont be updated and also no query will be performed other than full read
+// Includes manufacturing and normal technical details
+// pid is same as product id
+model TechnicalDetails {
+    /// same as product id
+    pid   String   @id @db.Uuid
+    key   String[]
+    value String[]
+
+    // Length should be equal, even in case when description point dont have image just give a "." for that
+    // Can be made as a 2d array of string
+    description       String[]
+    descriptionImages String[]
+
+    product Product @relation("Got", fields: [pid], references: [id])
+}
+
+// Query to get product for a tag will be fast but query to get tags of a product will be slower
+model Tags {
+    // id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    key              String     @id
+    value            String?
+    entityIdentifier Int
+    brands           Brand[]    @relation("BrandTag")
+    stores           Store[]    @relation("StoreTag")
+    products         Product[]  @relation("ProductTag")
+    Campaign         Campaign[] @relation("CampaignTag")
+}
+
+model Product {
+    id    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name  String
+    price Float
+
+    description         String
+    dateCreated         DateTime          @default(now())
+    dateUpdated         DateTime          @updatedAt
+    deletedAt           DateTime?
+    images              String[]
+    reviews             Review[]          @relation("Of")
+    questions           Question[]        @relation("Queries")
+    paymentMethods      Int
+    giftOptionAvailable Boolean
+    stock               Int
+    sold                Int               @default(0)
+    flagedForWrongInfo  Int               @default(0)
+    ///  denotes the number of days that it can be replaced, 0 means cant be replaced
+    /// same for return frame
+    replaceFrame        Int
+    returnFrame         Int
+    // ptag is reduntant but allows for faster query to get tags of a product
+    ptags               String[]
+    tags                Tags[]            @relation("ProductTag")
+    brandId             String            @db.Uuid
+    brand               Brand             @relation("ManufacturedBy", fields: [brandId], references: [id])
+    technicalDetails    TechnicalDetails? @relation("Got")
+
+    isVariantOf   Product[] @relation("variants")
+    otherVariants Product[] @relation("variants")
+
+    productCart          Cart[]                 @relation("currentProducts")
+    savedProductCart     Cart[]                 @relation("savedProducts")
+    boughtProducts       Cart[]                 @relation("boughtProducts")
+    category             Category?              @relation("ProductsOf", fields: [categoryKey], references: [id])
+    categoryKey          String?                @db.Uuid
+    productView          ProductView[]          @relation("GotViewed")
+    store                Store                  @relation("Sells", fields: [storeId], references: [id])
+    storeId              String                 @db.Uuid
+    offer                Offer[]                @relation("HaveOffer")
+    itemBought           ItemBought[]           @relation("Bought")
+    currentWarehouse     Warehouse?             @relation("currentlyStored", fields: [currentWarehouseId], references: [id])
+    currentWarehouseId   String?                @db.Uuid
+    pastWarehouse        Warehouse?             @relation("storedInPast", fields: [pastWarehouseId], references: [id])
+    pastWarehouseId      String?                @db.Uuid
+    productReviewOverall ProductReviewOverall[] @relation("OverallReview")
+    wishlist             Wishlist?              @relation("InWishList", fields: [wishListId], references: [id])
+    wishListId           String?                @db.Uuid
+    boughtWishList       Wishlist?              @relation("BoughtWishlist", fields: [boughtWishListId], references: [id])
+    boughtWishListId     String?                @db.Uuid
+    share                Share[]                @relation("SharedProduct")
+    userId               String?                @db.Uuid
+}
+
+model Cart {
+    /// same as user id
+    id   String @id @db.Uuid
+    user User   @relation("Have", fields: [id], references: [id])
+
+    products       Product[] @relation("currentProducts")
+    savedProducts  Product[] @relation("savedProducts")
+    boughtProducts Product[] @relation("boughtProducts")
+}
+
+// same pid and uid again and again may denote a strong interest
+// Decrease in price can be notified to customer
+model ProductView {
+    id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    pid          String   @db.Uuid
+    createdAt    DateTime @default(now())
+    currentPrice Float
+
+    uid        String? @db.Uuid
+    /// store uid or session id or ip address
+    // uid       String?
+    // ipAddress String?
+    identifier String
+
+    advertisementID String?   @db.Uuid
+    user            User?     @relation("Viewed", fields: [uid], references: [id])
+    product         Product   @relation("GotViewed", fields: [pid], references: [id])
+    Campaign        Campaign? @relation("GeneratedView", fields: [campaignId], references: [id])
+    campaignId      String?   @db.Uuid
+}
+
+model ItemBought {
+    id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    uid                  String                  @db.Uuid
+    pid                  String                  @db.Uuid
+    advertisementID      String?                 @db.Uuid
+    advertisement        SponsoredAdvertisement? @relation("GeneratedSell", fields: [advertisementID], references: [id])
+    createdAt            DateTime                @default(now())
+    addressId            String                  @db.Uuid
+    deliveryAddress      Address                 @relation("DeliveryAddress", fields: [addressId], references: [id])
+    expectedDeliveryTime DateTime
+    paymentsId           String                  @unique @db.Uuid
+    payment              Payments                @relation("Transaction", fields: [paymentsId], references: [id])
+    trackingID           String?                 @db.Uuid
+    user                 User                    @relation("BoughtBy", fields: [uid], references: [id])
+    product              Product                 @relation("Bought", fields: [pid], references: [id])
+    specialInstructions  String[]
+    DeliveryTracker      DeliveryTracker?        @relation("Tracker")
+}
+
+// key -- value
+// search - search query
+// page open - url, product id
+// page closed - url, product id
+// add to cart hover - product id, time
+// buy now hover - product id, time
+// emi hover
+// share - pid
+// 
+model Action {
+    id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    key                    String
+    values                 String[]
+    createdAt              DateTime                 @default(now())
+    uid                    String?                  @db.Uuid
+    identifier             String
+    user                   User?                    @relation("Took", fields: [uid], references: [id])
+    SponsoredAdvertisement SponsoredAdvertisement[] @relation("Cause")
+}
+
+model Complaint {
+    id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    key        String[]
+    values     String[]
+    uid        String?  @db.Uuid
+    identifier String
+    user       User?    @relation("Registered", fields: [uid], references: [id])
+}
+
+model Payments {
+    id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    uid        String?     @db.Uuid
+    identifier String
+    user       User?       @relation("Initiated", fields: [uid], references: [id])
+    provider   String
+    /// 1 - sucess 2- fail 3 - processing
+    status     Int
+    createdAt  DateTime    @default(now())
+    ItemBought ItemBought? @relation("Transaction")
+}
+
+model Address {
+    id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    city            String
+    country         String
+    pincode         String
+    state           String
+    uid             String?      @db.Uuid
+    user            User?        @relation("LocatedAt", fields: [uid], references: [id])
+    offerId         String?      @db.Uuid
+    offer           Offer?       @relation("TargetRegion", fields: [offerId], references: [id])
+    advertisementId String       @db.Uuid
+    ItemBought      ItemBought[] @relation("DeliveryAddress")
+    Employee        Employee[]   @relation("ResidenceAddress")
+    Department      Department[] @relation("OperatingAt")
+    Warehouse       Warehouse[]  @relation("WarehouseLocation")
+    Campaign        Campaign?    @relation("Targeting", fields: [campaignId], references: [id])
+    campaignId      String?      @db.Uuid
+}
+
+model Offer {
+    id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    pid                 String    @db.Uuid
+    applicableTimeframe DateTime?
+    offerToken          String?
+    product             Product   @relation("HaveOffer", fields: [pid], references: [id])
+    applicableRegion    Address[] @relation("TargetRegion")
+    Campaign            Campaign? @relation("PartOf", fields: [campaignId], references: [id])
+    campaignId          String?   @db.Uuid
+}
+
+model Campaign {
+    id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    budgetGiven            Int
+    targetedTags           Tags[]                   @relation("CampaignTag")
+    associatedOffers       Offer[]                  @relation("PartOf")
+    targetArea             Address[]                @relation("Targeting")
+    ProductView            ProductView[]            @relation("GeneratedView")
+    SponsoredAdvertisement SponsoredAdvertisement[] @relation("GeneratedAd")
+}
+
+model SponsoredAdvertisement {
+    id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    cid            String       @db.Uuid
+    campaign       Campaign     @relation("GeneratedAd", fields: [cid], references: [id])
+    // causeId    String?      @db.Uuid
+    RelatedActions Action[]     @relation("Cause")
+    ItemBought     ItemBought[] @relation("GeneratedSell")
+}
+
+model Department {
+    id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    address        Address    @relation("OperatingAt", fields: [addressId], references: [id])
+    addressId      String     @db.Uuid
+    departmentName String
+    mid            String     @unique @db.Uuid
+    manager        Employee   @relation("Manager", fields: [mid], references: [id])
+    Employee       Employee[] @relation("WorksFor")
+}
+
+model Employee {
+    id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name              String
+    lastName          String
+    email             String            @unique
+    password          String
+    image             String
+    dateOfJoining     DateTime
+    dateOfLeaving     DateTime?
+    position          String
+    address           Address           @relation("ResidenceAddress", fields: [addressId], references: [id])
+    addressId         String            @db.Uuid
+    salary            Int
+    department        Department        @relation("WorksFor", fields: [departmentID], references: [id])
+    departmentID      String            @db.Uuid
+    managedDepartment Department?       @relation("Manager")
+    DeliveryTracker   DeliveryTracker[] @relation("ProductTracking")
+}
+
+model AccessTable {
+    id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    inEffect Boolean @default(true)
+    key      String
+    value    String
+}
+
+model Warehouse {
+    id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    address            Address           @relation("WarehouseLocation", fields: [addressId], references: [id])
+    capacity           Int
+    remainingCapacity  Int
+    productsStored     Product[]         @relation("currentlyStored")
+    pastStoredProducts Product[]         @relation("storedInPast")
+    addressId          String            @db.Uuid
+    CurrentTracker     DeliveryTracker[] @relation("currentWarehouse")
+    DeliveryTracker    DeliveryTracker?  @relation("InJourney", fields: [trackerId], references: [id])
+    trackerId          String?           @db.Uuid
+}
+
+model DeliveryTracker {
+    id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    oid              String      @unique @db.Uuid
+    order            ItemBought  @relation("Tracker", fields: [oid], references: [id])
+    journey          Warehouse[] @relation("InJourney")
+    currentWarehouse Warehouse   @relation("currentWarehouse", fields: [wareHouseId], references: [id])
+    wareHouseId      String      @db.Uuid
+    onDeliveryWay    Boolean
+    postman          Employee    @relation("ProductTracking", fields: [employeeId], references: [id])
+    employeeId       String      @db.Uuid
+}
