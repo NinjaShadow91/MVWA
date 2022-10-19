@@ -25,7 +25,7 @@ export const orderRouter = createProtectedRouter()
             OtherVariants: true,
           },
         });
-        if (product === null) {
+        if (product === null || !product.productInventoryId) {
           throw throwTRPCError({
             message: "Product not found",
             code: "NOT_FOUND",

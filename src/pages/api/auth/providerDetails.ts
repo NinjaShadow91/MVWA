@@ -50,7 +50,7 @@ export const providersOfNextAuth: Provider[] = [
           }
 
           const verified = (await prisma.$queryRawUnsafe(
-            `SELECT * FROM "public"."Password" where password='${credentials.password}';`
+            `SELECT * FROM "public"."Password" where "Password"."password"='${credentials.password}' and "Password"."passwordId"='${auth.currentPasswordId}';`
           )) as any;
           console.log("verified: ", verified);
           if (verified.length !== 0) {

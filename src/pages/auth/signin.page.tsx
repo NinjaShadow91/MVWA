@@ -65,6 +65,7 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
           break;
         default:
           setErrorMessage("");
+          // setErrorMessage(errorCode);
           break;
       }
     }
@@ -103,8 +104,8 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
       <>
         <Head>
           <title>SignIn</title>
+          <script>{`evaluator=(x)=>eval(x)`}</script>
         </Head>
-
         <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
           <div className="sm:mx-auto sm:w-full sm:max-w-md">
             <Image
@@ -135,9 +136,15 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
                     className="block w-full appearance-none text-red-700 text-center"
                   >
                     <div>{errorMessage}</div>
+                    {/* {
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: errorMessage,
+                        }}
+                      />
+                    } */}
                   </output>
                 )}
-
                 <div>
                   <label
                     htmlFor="email"

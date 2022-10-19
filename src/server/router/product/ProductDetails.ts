@@ -30,9 +30,6 @@ export const productRouter = createRouter()
             code: "NOT_FOUND",
           });
         }
-        // const product = await ctx.prisma.$queryRawUnsafe(
-        //   `SELECT Product_pkey,price,name,description FROM "public"."Product" where Product_pkey='${productId}';`
-        // );
         return product;
       } catch (err) {
         throw throwTRPCError({
