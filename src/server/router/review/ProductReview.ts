@@ -28,6 +28,39 @@ const ProtectedProductReviewRouter = createProtectedRouter()
       }
     },
   })
+  .query("getProductReview", {
+    input: z.string().uuid(),
+    resolve: async ({ ctx, input }) => {
+      try {
+        const review = await ctx.prisma.productReview.findMany({
+          where: {
+            productId: input,
+          },
+        });
+        if (!review) {
+          throw throwTRPCError({
+            message: "Review not found",
+            code: "NOT_FOUND",
+          });
+        }
+        // for (let i = 0; i < review.length; i++) {
+        //   if (!review[i].deletedAt) return review[i] as ProductReview;
+        // }
+        for (const rev of review) {
+          if (!rev.deletedAt) return rev;
+        }
+        throw throwTRPCError({
+          message: "Review not found",
+          code: "NOT_FOUND",
+        });
+      } catch (e) {
+        throw throwPrismaTRPCError({
+          cause: e,
+          message: "Error while fetching product review",
+        });
+      }
+    },
+  })
   .mutation("createProductReview", {
     input: z.object({
       productId: z.string().uuid(),
@@ -57,6 +90,25 @@ const ProtectedProductReviewRouter = createProtectedRouter()
             message: "Product not found",
             code: "NOT_FOUND",
           });
+        }
+        if (prod) {
+          const alreadyPresent = await ctx.prisma.productReview.findFirst({
+            where: {
+              userId: ctx.session.user.id,
+              productId: input.productId,
+            },
+            select: {
+              productId: true,
+              userId: true,
+              deletedAt: true,
+            },
+          });
+          if (alreadyPresent && !alreadyPresent.deletedAt) {
+            throw throwTRPCError({
+              message: "Review already present",
+              code: "BAD_REQUEST",
+            });
+          }
         }
 
         const features = await ctx.prisma.productReviewFeature.findMany({
@@ -143,6 +195,11 @@ const ProtectedProductReviewRouter = createProtectedRouter()
             },
             select: {
               rating: true,
+              reviewCount1Star: true,
+              reviewCount2Star: true,
+              reviewCount3Star: true,
+              reviewCount4Star: true,
+              reviewCount5Star: true,
               reviewsCount: true,
               Features: {
                 select: {
@@ -165,8 +222,7 @@ const ProtectedProductReviewRouter = createProtectedRouter()
         const newRating =
           (overallReview.rating * overallReview.reviewsCount +
             input.overallRating) /
-            overallReview.reviewsCount +
-          1;
+          (overallReview.reviewsCount + 1);
 
         const updateArr = overallReview.Features.map((feature) => {
           if (
@@ -186,8 +242,7 @@ const ProtectedProductReviewRouter = createProtectedRouter()
                 data: {
                   rating:
                     (feature.rating * feature.reviewsCount + x.rating) /
-                      feature.reviewsCount +
-                    1,
+                    (feature.reviewsCount + 1),
                   reviewsCount: feature.reviewsCount + 1,
                 },
               });
@@ -212,6 +267,26 @@ const ProtectedProductReviewRouter = createProtectedRouter()
           data: {
             rating: newRating,
             reviewsCount: overallReview.reviewsCount + 1,
+            reviewCount1Star:
+              input.overallRating === 1
+                ? overallReview.reviewCount1Star + 1
+                : overallReview.reviewCount1Star,
+            reviewCount2Star:
+              input.overallRating === 2
+                ? overallReview.reviewCount2Star + 1
+                : overallReview.reviewCount2Star,
+            reviewCount3Star:
+              input.overallRating === 3
+                ? overallReview.reviewCount3Star + 1
+                : overallReview.reviewCount3Star,
+            reviewCount4Star:
+              input.overallRating === 4
+                ? overallReview.reviewCount4Star + 1
+                : overallReview.reviewCount4Star,
+            reviewCount5Star:
+              input.overallRating === 5
+                ? overallReview.reviewCount5Star + 1
+                : overallReview.reviewCount5Star,
           },
         });
         await ctx.prisma.user.update({
@@ -268,6 +343,8 @@ const ProtectedProductReviewRouter = createProtectedRouter()
         }
 
         if (prod.userId !== ctx.session.user.id) {
+          console.log(prod.userId);
+          console.log("check", ctx.session.user.id);
           throw throwTRPCError({
             message: "You are not authorized to update this review",
             code: "UNAUTHORIZED",
@@ -450,9 +527,12 @@ const ProtectedProductReviewRouter = createProtectedRouter()
           });
         }
 
-        await ctx.prisma.productReview.delete({
+        await ctx.prisma.productReview.update({
           where: {
             productReviewId: input,
+          },
+          data: {
+            deletedAt: new Date(),
           },
         });
         return true;
@@ -474,10 +554,37 @@ export const productReviewRouter = createRouter()
           where: {
             productId: input,
           },
+          select: {
+            productReviewId: true,
+            overallRating: true,
+            content: true,
+            createdAt: true,
+            deletedAt: true,
+          },
         });
-        return reviews.map((review) => {
+        return reviews.filter((review) => {
           return review.deletedAt ? false : true;
         });
+      } catch (e) {
+        throwPrismaTRPCError({
+          cause: e,
+          message: "Error while fetching product reviews",
+        });
+      }
+    },
+  })
+  .query("getProductOverallReview", {
+    input: z.string().uuid(),
+    resolve: async ({ ctx, input }) => {
+      try {
+        const review = await ctx.prisma.productReviewsCombinedResult.findUnique(
+          {
+            where: {
+              productId: input,
+            },
+          }
+        );
+        return review;
       } catch (e) {
         throwPrismaTRPCError({
           cause: e,

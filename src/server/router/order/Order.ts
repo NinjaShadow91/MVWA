@@ -93,7 +93,7 @@ export const orderRouter = createProtectedRouter()
               await ctx.prisma.$transaction([
                 ctx.prisma.orderItem.create({
                   data: {
-                    productId: product.productInventoryId,
+                    productId: product.productId,
                     quantity: quantity,
                     Order: { connect: { ordersId: ordersId } },
                     // Add logic to change order status dynamically

@@ -13,6 +13,15 @@ import { productRouter } from "./product/ProductDetails";
 import { productSearchRouter } from "./product/Search";
 import { productInventoryRouter } from "./order/ProductInventory";
 import { orderRouter } from "./order/Order";
+import { FavouriteProductsRouter } from "./editor/FavouriteProducts";
+import { MediaRouter } from "./media/Media";
+import { CategoryRouter } from "./product/Categories";
+import { FeaturedPostsRouter } from "./editor/FeaturedPosts";
+import { BannerRouter } from "./editor/Banner";
+import { ProductRecommendationBasedOnPreviousOrders } from "./personalisation/BasedOnPreviousOrders";
+import { CartRouter } from "./cart/Cart";
+import { SaveForLatter } from "./cart/SaveForLatter";
+import { WishlistRouter } from "./cart/WishList";
 
 export const appRouter = createRouter()
   .transformer(superjson)
@@ -27,7 +36,16 @@ export const appRouter = createRouter()
   .merge("product.", productRouter)
   .merge("product.search.", productSearchRouter)
   .merge("product.inventory.", productInventoryRouter)
-  .merge("order.", orderRouter);
+  .merge("order.", orderRouter)
+  .merge("editor.favourite.", FavouriteProductsRouter)
+  .merge("media.", MediaRouter)
+  .merge("category.", CategoryRouter)
+  .merge("editor.featured.", FeaturedPostsRouter)
+  .merge("editor.banner.", BannerRouter)
+  .merge("personalisation.", ProductRecommendationBasedOnPreviousOrders)
+  .merge("cart.", CartRouter)
+  .merge("product.saveForLatter.", SaveForLatter)
+  .merge("product.wishlist.", WishlistRouter);
 
 // export type definition of API
 export type AppRouter = typeof appRouter;

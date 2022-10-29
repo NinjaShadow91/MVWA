@@ -21,9 +21,10 @@ export default defineNextConfig({
     locales: ["en"],
     defaultLocale: "en",
   },
-  // images: {
-  // domains: ["tailwindui.com"],
-  // },
+  images: {
+    // domains: ["tailwindui.com"],
+    domains: ["localhost"],
+  },
 });
 
 // module.exports = {

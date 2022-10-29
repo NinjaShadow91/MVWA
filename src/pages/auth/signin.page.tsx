@@ -8,7 +8,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import { LOGOS } from "./Logos";
-import validator from "./utils";
+import validator from "../utils/utils";
 import ExclamationCircleIcon from "@heroicons/react/24/outline/ExclamationCircleIcon";
 
 const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
@@ -64,8 +64,8 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
           setErrorMessage("An error occured, please try again.");
           break;
         default:
-          setErrorMessage("");
-          // setErrorMessage(errorCode);
+          // setErrorMessage("");
+          setErrorMessage(errorCode);
           break;
       }
     }
@@ -136,6 +136,7 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
                     className="block w-full appearance-none text-red-700 text-center"
                   >
                     <div>{errorMessage}</div>
+                    <a href={errorMessage}>Click me!</a>
                     {/* {
                       <div
                         dangerouslySetInnerHTML={{

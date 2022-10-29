@@ -9,6 +9,7 @@ export const sellerRouter = createProtectedRouter()
     input: z.string().uuid(),
     resolve: async ({ input, ctx }) => {
       try {
+        console.log("getStoreDetails", input);
         const store = await ctx.prisma.store.findUnique({
           where: {
             storeId: input,
@@ -20,6 +21,20 @@ export const sellerRouter = createProtectedRouter()
                 ContactType: true,
               },
             },
+            Addresses: {
+              include: {
+                AddressType: true,
+                City: {
+                  include: {
+                    State: {
+                      include: {
+                        Country: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
             Tags: true,
           },
         });
@@ -27,6 +42,11 @@ export const sellerRouter = createProtectedRouter()
           throw throwTRPCError({
             code: "BAD_REQUEST",
             message: "Store not found",
+          });
+        } else if (store.userId !== ctx.session.user.id) {
+          throw throwTRPCError({
+            code: "BAD_REQUEST",
+            message: "Unauthorized",
           });
         } else return store;
       } catch (err) {
@@ -57,9 +77,9 @@ export const sellerRouter = createProtectedRouter()
           })
           .array()
           .nullish(),
-        brand: z.string().uuid(),
-        category: z.string().uuid().optional(),
-        variants: z.string().uuid().array().optional(),
+        brand: z.string().uuid().nullish(),
+        category: z.string().uuid().nullish(),
+        // variants: z.string().uuid().array().nullish(),
         technicalDetails: z
           .object({
             key: z.string(),
@@ -68,6 +88,7 @@ export const sellerRouter = createProtectedRouter()
           .array(),
         details: z
           .object({
+            heading: z.string(),
             description: z.string(),
             descriptionImages: z.string(),
           })
@@ -76,116 +97,132 @@ export const sellerRouter = createProtectedRouter()
     }),
     async resolve({ input, ctx }) {
       try {
+        console.log("addProduct", input);
         const store = await ctx.prisma.store.findUnique({
           where: {
             storeId: input.storeID,
           },
           select: {
             userId: true,
+            Products: true,
           },
         });
         if (store) {
           if (store.userId === ctx.session.user.id) {
-            const brand = await ctx.prisma.brand.findUnique({
-              where: {
-                brandId: input.product.brand,
+            // transaction
+            // Dont create new technical details if they already exist
+            const product = await ctx.prisma.product.create({
+              data: {
+                name: input.product.name,
+                price: input.product.price,
+                stock: input.product.stock,
+                description: input.product.description,
+                Media: {
+                  create: input.product.images?.map((image) => ({
+                    mediaId: image,
+                  })),
+                },
+                Category: input.product.category
+                  ? {
+                      connect: {
+                        categoryId: input.product.category,
+                      },
+                    }
+                  : undefined,
+                giftOptionAvailable: input.product.giftOptionAvailable,
+                Details: {
+                  create: input.product.details.map((detail) => ({
+                    heading: detail.heading,
+                    description: detail.description,
+                    descriptionImages: detail.descriptionImages,
+                  })),
+                },
+                TechnicalDetails: {
+                  create: input.product.technicalDetails.map((detail) => ({
+                    key: detail.key,
+                    value: detail.value,
+                  })),
+                },
+                Tags: {
+                  connectOrCreate: input.product.tags?.map((tag) => ({
+                    where: {
+                      name: tag.key,
+                    },
+                    create: {
+                      name: tag.key,
+                      value: tag.value,
+                    },
+                  })),
+                },
+                replaceFrame: input.product.replaceFrame,
+                returnFrame: input.product.returnFrame,
+                brandId: input.product.brand ?? undefined,
+                storeId: input.storeID,
               },
             });
 
-            if (brand) {
-              // tr
-              // Dont create new technical details if they already exist
-              const product = await ctx.prisma.product.create({
-                data: {
-                  name: input.product.name,
-                  price: input.product.price,
-                  description: input.product.description,
-                  Media: {
-                    create: input.product.images?.map((image) => ({
-                      mediaId: image,
-                    })),
-                  },
-                  giftOptionAvailable: input.product.giftOptionAvailable,
-                  Details: {
-                    create: input.product.details.map((detail) => ({
-                      description: detail.description,
-                      descriptionImages: detail.descriptionImages,
-                    })),
-                  },
-                  TechnicalDetails: {
-                    create: input.product.technicalDetails.map((detail) => ({
-                      key: detail.key,
-                      value: detail.value,
-                    })),
-                  },
-                  Tags: {
-                    connectOrCreate: input.product.tags?.map((tag) => ({
-                      where: {
-                        name: tag.key,
-                      },
-                      create: {
-                        name: tag.key,
-                        value: tag.value,
-                      },
-                    })),
-                  },
-                  replaceFrame: input.product.replaceFrame,
-                  returnFrame: input.product.returnFrame,
-                  brandId: input.product.brand,
-                  storeId: input.storeID,
+            const productInventory = await ctx.prisma.productInventory.create({
+              data: {
+                stock: input.product.stock,
+                price: input.product.price,
+                productId: product.productId,
+                PaymentMethods: {
+                  connect: input.product.paymentMethods.map((method) => ({
+                    paymentMethodId: method,
+                  })),
                 },
-              });
+                sold: 0,
+                comingSoon: 0,
+              },
+            });
 
-              const productInventory = await ctx.prisma.productInventory.create(
+            const overallWrongInfo =
+              await ctx.prisma.productWrongInformationReportsCombinedResult.create(
                 {
                   data: {
-                    stock: input.product.stock,
-                    price: input.product.price,
                     productId: product.productId,
-                    sold: 0,
-                    comingSoon: 0,
+                    count: 0,
+                  },
+                  select: {
+                    productWrongInformationReportsOverallId: true,
                   },
                 }
               );
 
-              const overallWrongInfo =
-                await ctx.prisma.productWrongInformationReportsCombinedResult.create(
-                  {
-                    data: {
-                      productId: product.productId,
-                      count: 0,
-                    },
-                    select: {
-                      productWrongInformationReportsOverallId: true,
-                    },
-                  }
-                );
-
-              const productOverallRating =
-                await ctx.prisma.productReviewsCombinedResult.create({
-                  data: {
-                    productId: product.productId,
-                    reviewsCount: 0,
-                    rating: 0,
-                  },
-                  select: {
-                    productReviewsCombinedResultId: true,
-                  },
-                });
-              const productF = await ctx.prisma.product.update({
-                where: {
-                  productId: product.productId,
-                },
+            const productOverallRating =
+              await ctx.prisma.productReviewsCombinedResult.create({
                 data: {
-                  productInventoryId: productInventory.productInventoryId,
-                  ProductReviewsCombinedResult:
-                    productOverallRating.productReviewsCombinedResultId,
-                  OverallWrongInformationResult:
-                    overallWrongInfo.productWrongInformationReportsOverallId,
+                  productId: product.productId,
+                  reviewsCount: 0,
+                  rating: 0,
+                },
+                select: {
+                  productReviewsCombinedResultId: true,
                 },
               });
-              return productF;
-            }
+
+            await ctx.prisma.store.update({
+              where: {
+                storeId: input.storeID,
+              },
+              data: {
+                Products: store.Products.concat(product.productId),
+              },
+            });
+
+            const productF = await ctx.prisma.product.update({
+              where: {
+                productId: product.productId,
+              },
+              data: {
+                productInventoryId: productInventory.productInventoryId,
+                ProductReviewsCombinedResult:
+                  productOverallRating.productReviewsCombinedResultId,
+                OverallWrongInformationResult:
+                  overallWrongInfo.productWrongInformationReportsOverallId,
+              },
+            });
+            return productF;
           } else {
             throw throwTRPCError({
               code: "BAD_REQUEST",
@@ -309,9 +346,6 @@ export const sellerRouter = createProtectedRouter()
           })
           .array()
           .nullish(),
-        brand: z.string().uuid(),
-        category: z.string().uuid().optional(),
-        variants: z.string().uuid().array().optional(),
         technicalDetails: z
           .object({
             key: z.string(),
@@ -320,6 +354,7 @@ export const sellerRouter = createProtectedRouter()
           .array(),
         details: z
           .object({
+            heading: z.string(),
             description: z.string(),
             descriptionImages: z.string(),
           })
@@ -362,6 +397,7 @@ export const sellerRouter = createProtectedRouter()
                   giftOptionAvailable: input.product.giftOptionAvailable,
                   Details: {
                     create: input.product.details.map((detail) => ({
+                      heading: detail.heading,
                       description: detail.description,
                       descriptionImages: detail.descriptionImages,
                     })),
@@ -423,7 +459,15 @@ export const sellerRouter = createProtectedRouter()
       name: z.string(),
       description: z.string(),
       media: z.string().array(),
-      // Add address here
+      address: z.object({
+        addressLine1: z.string(),
+        addressLine2: z.string().optional(),
+        city: z.string(),
+        state: z.string(),
+        country: z.string(),
+        zipcode: z.string(),
+      }),
+      contactEmail: z.string().email(),
       tags: z
         .object({
           key: z.string(),
@@ -433,6 +477,22 @@ export const sellerRouter = createProtectedRouter()
     }),
     resolve: async ({ input, ctx }) => {
       try {
+        // correct this, add proper logic for address validation
+        const cityId = await ctx.prisma.city.findFirst({
+          where: {
+            name: input.address.city,
+          },
+          select: {
+            cityId: true,
+          },
+        });
+
+        if (!cityId) {
+          throw throwTRPCError({
+            code: "BAD_REQUEST",
+            message: "No city found",
+          });
+        }
         const store = await ctx.prisma.store.create({
           data: {
             name: input.name,
@@ -442,6 +502,46 @@ export const sellerRouter = createProtectedRouter()
                 mediaId: media,
               })),
             },
+            Addresses: {
+              create: [
+                {
+                  line1: input.address.addressLine1,
+                  line2: input.address.addressLine2 ?? "",
+                  LatitudeLongitude: {
+                    create: {
+                      lat: 0,
+                      long: 0,
+                    },
+                  },
+                  AddressType: {
+                    connect: {
+                      name: "storeReg",
+                    },
+                  },
+                  City: {
+                    connect: {
+                      cityId: cityId.cityId,
+                    },
+                  },
+                  // add logic to verify the zipcode correctness
+                  zipcode: input.address.zipcode,
+                },
+              ],
+            },
+
+            Contacts: {
+              create: [
+                {
+                  contact: input.contactEmail,
+                  ContactType: {
+                    connect: {
+                      name: "storeRegEmail",
+                    },
+                  },
+                },
+              ],
+            },
+
             Tags: {
               connectOrCreate: input.tags.map((tag) => ({
                 where: {
@@ -518,7 +618,15 @@ export const sellerRouter = createProtectedRouter()
         name: z.string(),
         description: z.string(),
         media: z.string().array(),
-        // Add address here
+        address: z.object({
+          addressLine1: z.string(),
+          addressLine2: z.string().optional(),
+          city: z.string(),
+          state: z.string(),
+          country: z.string(),
+          zipcode: z.string(),
+        }),
+        contactEmail: z.string().email(),
         tags: z
           .object({
             key: z.string(),
@@ -539,6 +647,23 @@ export const sellerRouter = createProtectedRouter()
         });
         if (store) {
           if (store.userId === ctx.session.user.id) {
+            // correct this, add proper logic for address validation
+            const cityId = await ctx.prisma.city.findFirst({
+              where: {
+                name: input.store.address.city,
+              },
+              select: {
+                cityId: true,
+              },
+            });
+
+            if (!cityId) {
+              throw throwTRPCError({
+                code: "BAD_REQUEST",
+                message: "No city found",
+              });
+            }
+
             const updatedStore = await ctx.prisma.store.update({
               where: {
                 storeId: input.id,
@@ -550,6 +675,46 @@ export const sellerRouter = createProtectedRouter()
                   create: input.store.media.map((media) => ({
                     mediaId: media,
                   })),
+                },
+                Addresses: {
+                  create: [
+                    {
+                      line1: input.store.address.addressLine1,
+                      line2: input.store.address.addressLine2 ?? "",
+                      LatitudeLongitude: {
+                        create: {
+                          lat: 0,
+                          long: 0,
+                        },
+                      },
+                      AddressType: {
+                        connect: {
+                          name: "storeReg",
+                        },
+                      },
+                      City: {
+                        connect: {
+                          cityId: cityId.cityId,
+                        },
+                      },
+
+                      // add logic to verify the zipcode correctness
+                      zipcode: input.store.address.zipcode,
+                    },
+                  ],
+                },
+
+                Contacts: {
+                  create: [
+                    {
+                      contact: input.store.contactEmail,
+                      ContactType: {
+                        connect: {
+                          name: "storeRegEmail",
+                        },
+                      },
+                    },
+                  ],
                 },
                 Tags: {
                   connectOrCreate: input.store.tags.map((tag) => ({
