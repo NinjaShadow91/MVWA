@@ -36,7 +36,7 @@ const AddProduct: NextPage = () => {
     console.log("add product", storeId);
     trpcAddProduct.mutate(
       {
-        storeID: storeId,
+        storeId: storeId,
         product: {
           name: productName.current,
           description: productDescription.current,

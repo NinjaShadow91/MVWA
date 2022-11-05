@@ -596,6 +596,26 @@ export const sellerRouter = createProtectedRouter()
             message: "No city found",
           });
         }
+
+        let LatitudeLongitude = await ctx.prisma.latitudeLongitude.findFirst({
+          where: {
+            lat: 0,
+            long: 0,
+          },
+          select: {
+            latitudeLongitudeId: true,
+          },
+        });
+
+        if (!LatitudeLongitude) {
+          LatitudeLongitude = await ctx.prisma.latitudeLongitude.create({
+            data: {
+              lat: 0,
+              long: 0,
+            },
+          });
+        }
+
         const store = await ctx.prisma.store.create({
           data: {
             name: input.name,
@@ -611,9 +631,9 @@ export const sellerRouter = createProtectedRouter()
                   line1: input.address.addressLine1,
                   line2: input.address.addressLine2 ?? "",
                   LatitudeLongitude: {
-                    create: {
-                      lat: 0,
-                      long: 0,
+                    connect: {
+                      latitudeLongitudeId:
+                        LatitudeLongitude.latitudeLongitudeId,
                     },
                   },
                   AddressType: {

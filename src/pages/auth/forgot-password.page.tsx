@@ -19,7 +19,8 @@ const SignIn: NextPage = () => {
   const [inputNewPasswordError, setInputNewPasswordError] = useState(false);
   const [inputConfirmNewPasswordError, setInputConfirmNewPasswordError] =
     useState(false);
-  const trpcSubmitPasswordReset = trpc.useMutation(["auth.forgotPassword"]);
+  // const trpcSubmitPasswordReset = trpc.useMutation(["auth.forgotPassword"]);
+  const trpcSubmitPasswordReset = trpc.useMutation(["auth.forgotPasswordV1"]);
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

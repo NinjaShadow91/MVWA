@@ -256,6 +256,257 @@ export const authRouter = createRouter()
       }
     },
   })
+  .mutation("forgotPasswordV1", {
+    input: z.object({
+      resetPassword: z
+        .object({
+          token: z.string(),
+          newPassword: z.string(),
+        })
+        .nullish(),
+      generatePasswordResetLink: z
+        .object({
+          email: z.string().email(),
+        })
+        .nullish(),
+    }),
+    output: z.object({
+      message: z.string(),
+    }),
+    async resolve({ ctx, input }) {
+      const { resetPassword, generatePasswordResetLink } = input;
+      if (resetPassword) {
+        const { token, newPassword } = resetPassword;
+        return await new Promise<string>((resolve, reject) => {
+          pbkdf2(
+            token,
+            "",
+            ITERATIONS,
+            64,
+            "sha512",
+            async (err, derivedToken) => {
+              if (err) reject(err);
+              else {
+                resolve(derivedToken.toString("hex"));
+              }
+            }
+          );
+        })
+          .then(async (derivedToken) => {
+            try {
+              const verificationToken =
+                await ctx.prisma.verificationToken.findUnique({
+                  where: { token: derivedToken },
+                });
+              if (
+                verificationToken &&
+                verificationToken.type === "PASSWORD_RESET" &&
+                verificationToken.expires > new Date()
+              ) {
+                const user = await ctx.prisma.userAuthentication.findUnique({
+                  where: { userAuthenticationId: verificationToken.identifier },
+                  select: {
+                    userAuthenticationId: true,
+                    currentPasswordId: true,
+                    PasswordHistory: {
+                      select: {
+                        passwordHistoryId: true,
+                      },
+                    },
+                  },
+                });
+                if (user) {
+                  try {
+                    const salt = randomBytes(128).toString("hex");
+                    return await new Promise<[string, string]>(
+                      (resolve, reject) => {
+                        pbkdf2(
+                          newPassword,
+                          salt,
+                          ITERATIONS,
+                          64,
+                          "sha512",
+                          async (err, derivedKey) => {
+                            if (err) reject(err);
+                            else {
+                              resolve([
+                                derivedToken,
+                                derivedKey.toString("hex"),
+                              ]);
+                            }
+                          }
+                        );
+                      }
+                    )
+                      .then(async ([derivedToken, derivedKey]) => {
+                        try {
+                          ctx.prisma.$transaction([
+                            ctx.prisma.verificationToken.update({
+                              where: { token: derivedToken },
+                              data: {
+                                type: "PASSWORD_RESET_USED",
+                              },
+                            }),
+                            ctx.prisma.userAuthentication.update({
+                              where: {
+                                userAuthenticationId: user.userAuthenticationId,
+                              },
+                              data: {
+                                CurrentPassword: {
+                                  create: {
+                                    password: derivedKey,
+                                    salt: salt,
+                                    hashingAlgorithm: "sha512",
+                                    numIterations: ITERATIONS,
+                                  },
+                                },
+                              },
+                            }),
+                            ctx.prisma.password.update({
+                              where: {
+                                passwordId: user.currentPasswordId,
+                              },
+                              data: {
+                                PasswordHistory: user.PasswordHistory
+                                  ? {
+                                      connect: {
+                                        passwordHistoryId:
+                                          user.PasswordHistory
+                                            .passwordHistoryId,
+                                      },
+                                    }
+                                  : {
+                                      create: {
+                                        userAuthenticationId:
+                                          user.userAuthenticationId,
+                                      },
+                                    },
+                              },
+                            }),
+                          ]);
+                          return {
+                            message: "Sucessfully changed the password",
+                          };
+                        } catch (err) {
+                          throw throwPrismaTRPCError({
+                            cause: err,
+                            message:
+                              "Something went wrong while updating the password",
+                          });
+                        }
+                      })
+                      .catch((err) => {
+                        throw throwTRPCError({
+                          cause: err,
+                          code: "INTERNAL_SERVER_ERROR",
+                          message:
+                            "Something went wrong while hashing the password",
+                        });
+                      });
+                  } catch (err) {
+                    throw throwTRPCError({
+                      cause: err,
+                      code: "INTERNAL_SERVER_ERROR",
+                      message: "Something went wrong while generating the salt",
+                    });
+                  }
+                } else {
+                  throw throwTRPCError({
+                    code: "BAD_REQUEST",
+                    message: "No user found",
+                  });
+                }
+              } else {
+                throw throwTRPCError({
+                  code: "BAD_REQUEST",
+                  message: "Password reset not authorized.",
+                });
+              }
+            } catch (err) {
+              throw throwPrismaTRPCError({
+                cause: err,
+                message: "Something went wrong while resetting the password",
+              });
+            }
+          })
+          .catch((err) => {
+            throw throwTRPCError({
+              cause: err,
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Something went wrong while resetting your password",
+            });
+          });
+      } else if (generatePasswordResetLink) {
+        try {
+          const user = await ctx.prisma.userAuthentication.findUnique({
+            where: { email: generatePasswordResetLink.email },
+          });
+
+          if (user) {
+            try {
+              const token = randomBytes(128).toString("hex");
+              await new Promise<string>((resolve, reject) => {
+                pbkdf2(
+                  token,
+                  "",
+                  ITERATIONS,
+                  64,
+                  "sha512",
+                  async (err, derivedToken) => {
+                    if (err) reject(err);
+                    else resolve(derivedToken.toString("hex"));
+                  }
+                );
+              }).then(async (derivedToken) => {
+                try {
+                  await ctx.prisma.verificationToken.create({
+                    data: {
+                      identifier: user.userAuthenticationId,
+                      token: derivedToken,
+                      type: "PASSWORD_RESET",
+                      expires: new Date(new Date().getTime() + 10 * 60 * 1000),
+                    },
+                  });
+                  const host = ctx.req.headers.host ?? "";
+                  console.log(host.concat("?token=").concat(token));
+                  // send mail to user.email, subject Password Reset and with link auth/forgot-password?token=  --token---
+                  return token;
+                } catch (err) {
+                  throw throwPrismaTRPCError({
+                    cause: err,
+                    message:
+                      "Something went bad while generating your password reset token.",
+                  });
+                }
+              });
+            } catch (err) {
+              throw throwTRPCError({
+                cause: err,
+                code: "INTERNAL_SERVER_ERROR",
+                message:
+                  "Something went bad while generating your password reset token.",
+              });
+            }
+          }
+          return {
+            message:
+              "Password reset link sent if the given link was in our database.",
+          };
+        } catch (err) {
+          throw throwPrismaTRPCError({
+            cause: err,
+            message:
+              "Something went wrong while generating reset link for your password, please try again.",
+          });
+        }
+      } else {
+        throw throwTRPCError({
+          code: "BAD_REQUEST",
+          message: "Please pass one option.",
+        });
+      }
+    },
+  })
   .mutation("signup", {
     input: z.object({
       email: z.string().email(),
