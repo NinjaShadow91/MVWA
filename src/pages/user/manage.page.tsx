@@ -1,55 +1,13 @@
-import {
-  CreditCardIcon,
-  KeyIcon,
-  SquaresPlusIcon,
-  UserCircleIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
-
-const navigation = [
-  { name: "Account", href: "#", icon: UserCircleIcon, current: true },
-  { name: "Password", href: "#", icon: KeyIcon, current: false },
-  { name: "Plan & Billing", href: "#", icon: CreditCardIcon, current: false },
-  { name: "Team", href: "#", icon: UserGroupIcon, current: false },
-  { name: "Integrations", href: "#", icon: SquaresPlusIcon, current: false },
-];
+import Navbar from "../../components/Navbar";
 
 function classNames(...classes: any) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function Example() {
+export default function UserManage() {
   return (
     <div className="lg:grid lg:grid-cols-12 lg:gap-x-5">
-      <aside className="py-6 px-2 sm:px-6 lg:col-span-3 lg:py-0 lg:px-0">
-        <nav className="space-y-1">
-          {navigation.map((item) => (
-            <a
-              key={item.name}
-              href={item.href}
-              className={classNames(
-                item.current
-                  ? "bg-gray-50 text-indigo-700 hover:text-indigo-700 hover:bg-white"
-                  : "text-gray-900 hover:text-gray-900 hover:bg-gray-50",
-                "group rounded-md px-3 py-2 flex items-center text-sm font-medium"
-              )}
-              aria-current={item.current ? "page" : undefined}
-            >
-              <item.icon
-                className={classNames(
-                  item.current
-                    ? "text-indigo-500 group-hover:text-indigo-500"
-                    : "text-gray-400 group-hover:text-gray-500",
-                  "flex-shrink-0 -ml-1 mr-3 h-6 w-6"
-                )}
-                aria-hidden="true"
-              />
-              <span className="truncate">{item.name}</span>
-            </a>
-          ))}
-        </nav>
-      </aside>
-
+      <Navbar></Navbar>
       <div className="space-y-6 sm:px-6 lg:col-span-9 lg:px-0">
         <form action="#" method="POST">
           <div className="shadow sm:overflow-hidden sm:rounded-md">
@@ -73,9 +31,6 @@ export default function Example() {
                     Username
                   </label>
                   <div className="mt-1 flex rounded-md shadow-sm">
-                    <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
-                      workcation.com/
-                    </span>
                     <input
                       type="text"
                       name="username"
@@ -99,7 +54,7 @@ export default function Example() {
                       name="about"
                       rows={3}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      placeholder="you@example.com"
+                      placeholder="About you"
                       defaultValue={""}
                     />
                   </div>
@@ -200,32 +155,16 @@ export default function Example() {
               <div className="grid grid-cols-6 gap-6">
                 <div className="col-span-6 sm:col-span-3">
                   <label
-                    htmlFor="first-name"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    First name
-                  </label>
-                  <input
-                    type="text"
-                    name="first-name"
-                    id="first-name"
-                    autoComplete="given-name"
-                    className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-
-                <div className="col-span-6 sm:col-span-3">
-                  <label
                     htmlFor="last-name"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Last name
+                    Name
                   </label>
                   <input
                     type="text"
-                    name="last-name"
-                    id="last-name"
-                    autoComplete="family-name"
+                    name="name"
+                    id="name"
+                    autoComplete="name"
                     className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                   />
                 </div>

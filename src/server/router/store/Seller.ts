@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createProtectedRouter } from "../context";
 import { throwPrismaTRPCError, throwTRPCError } from "../util";
 
-// create store , update store, delete store
+// create update sku, update not create new detail media ,etc in updates
 
 export const sellerRouter = createProtectedRouter()
   .query("getStoreDetails", {
@@ -59,7 +59,15 @@ export const sellerRouter = createProtectedRouter()
   })
   .mutation("addProduct", {
     input: z.object({
-      storeID: z.string().uuid(),
+      storeId: z.string().uuid(),
+      existingProduct: z
+        .object({
+          productSKUId: z.string().uuid(),
+          price: z.number().nonnegative(),
+          stock: z.number().positive(),
+          paymentMethods: z.string().uuid().array(),
+        })
+        .nullish(),
       product: z.object({
         name: z.string(),
         price: z.number().nonnegative(),
@@ -97,132 +105,205 @@ export const sellerRouter = createProtectedRouter()
     }),
     async resolve({ input, ctx }) {
       try {
-        console.log("addProduct", input);
         const store = await ctx.prisma.store.findUnique({
           where: {
-            storeId: input.storeID,
+            storeId: input.storeId,
           },
           select: {
+            storeId: true,
             userId: true,
             Products: true,
           },
         });
         if (store) {
           if (store.userId === ctx.session.user.id) {
-            // transaction
-            // Dont create new technical details if they already exist
-            const product = await ctx.prisma.product.create({
-              data: {
-                name: input.product.name,
-                price: input.product.price,
-                stock: input.product.stock,
-                description: input.product.description,
-                Media: {
-                  create: input.product.images?.map((image) => ({
-                    mediaId: image,
-                  })),
+            if (input.existingProduct) {
+              const product = await ctx.prisma.productSKU.findUnique({
+                where: {
+                  productSKUId: input.existingProduct.productSKUId,
                 },
-                Category: input.product.category
-                  ? {
-                      connect: {
-                        categoryId: input.product.category,
+              });
+              if (product) {
+                const productInventory =
+                  await ctx.prisma.productInventory.create({
+                    data: {
+                      storeId: store.storeId,
+                      productId: product.productSKUId,
+                      stock: input.existingProduct.stock,
+                      price: input.existingProduct.price,
+                      comingSoon: 0,
+                      sold: 0,
+                      PaymentMethods: {
+                        connect: input.existingProduct.paymentMethods.map(
+                          (method) => ({
+                            paymentMethodId: method,
+                          })
+                        ),
                       },
-                    }
-                  : undefined,
-                giftOptionAvailable: input.product.giftOptionAvailable,
-                Details: {
-                  create: input.product.details.map((detail) => ({
-                    heading: detail.heading,
-                    description: detail.description,
-                    descriptionImages: detail.descriptionImages,
-                  })),
-                },
-                TechnicalDetails: {
-                  create: input.product.technicalDetails.map((detail) => ({
-                    key: detail.key,
-                    value: detail.value,
-                  })),
-                },
-                Tags: {
-                  connectOrCreate: input.product.tags?.map((tag) => ({
-                    where: {
-                      name: tag.key,
                     },
-                    create: {
-                      name: tag.key,
-                      value: tag.value,
+                  });
+
+                await ctx.prisma.productSKU.update({
+                  where: {
+                    productSKUId: productInventory.productId,
+                  },
+                  data: {
+                    productInventoryIds: {
+                      push: productInventory.productInventoryId,
                     },
-                  })),
+                  },
+                });
+              } else {
+                throw throwTRPCError({
+                  code: "BAD_REQUEST",
+                  message: "Product not found",
+                });
+              }
+            } else if (input.product) {
+              // transaction
+              // Dont create new technical details if they already exist
+              const product = await ctx.prisma.product.create({
+                data: {
+                  name: input.product.name,
+                  description: input.product.description,
+                  Media: {
+                    create: input.product.images?.map((image) => ({
+                      mediaId: image,
+                    })),
+                  },
+                  Category: input.product.category
+                    ? {
+                        connect: {
+                          categoryId: input.product.category,
+                        },
+                      }
+                    : undefined,
+                  giftOptionAvailable: input.product.giftOptionAvailable,
+                  Details: {
+                    create: input.product.details.map((detail) => ({
+                      heading: detail.heading,
+                      description: detail.description,
+                      descriptionImages: detail.descriptionImages,
+                    })),
+                  },
+                  TechnicalDetails: {
+                    create: input.product.technicalDetails.map((detail) => ({
+                      key: detail.key,
+                      value: detail.value,
+                    })),
+                  },
+                  Tags: {
+                    connectOrCreate: input.product.tags?.map((tag) => ({
+                      where: {
+                        name: tag.key,
+                      },
+                      create: {
+                        name: tag.key,
+                        value: tag.value,
+                      },
+                    })),
+                  },
+                  replaceFrame: input.product.replaceFrame,
+                  returnFrame: input.product.returnFrame,
+                  brandId: input.product.brand ?? undefined,
+                  originalStoreId: input.storeId,
                 },
-                replaceFrame: input.product.replaceFrame,
-                returnFrame: input.product.returnFrame,
-                brandId: input.product.brand ?? undefined,
-                storeId: input.storeID,
-              },
-            });
+              });
 
-            const productInventory = await ctx.prisma.productInventory.create({
-              data: {
-                stock: input.product.stock,
-                price: input.product.price,
-                productId: product.productId,
-                PaymentMethods: {
-                  connect: input.product.paymentMethods.map((method) => ({
-                    paymentMethodId: method,
-                  })),
-                },
-                sold: 0,
-                comingSoon: 0,
-              },
-            });
+              const overallWrongInfo =
+                await ctx.prisma.productWrongInformationReportsCombinedResult.create(
+                  {
+                    data: {
+                      productId: product.productId,
+                      count: 0,
+                    },
+                    select: {
+                      productWrongInformationReportsOverallId: true,
+                    },
+                  }
+                );
 
-            const overallWrongInfo =
-              await ctx.prisma.productWrongInformationReportsCombinedResult.create(
-                {
+              const productOverallRating =
+                await ctx.prisma.productReviewsCombinedResult.create({
                   data: {
                     productId: product.productId,
-                    count: 0,
+                    reviewsCount: 0,
+                    rating: 0,
                   },
                   select: {
-                    productWrongInformationReportsOverallId: true,
+                    productReviewsCombinedResultId: true,
+                  },
+                });
+
+              const prodSKU = await ctx.prisma.productSKU.create({
+                data: {
+                  productInventoryIds: [],
+                  skuName: product.name,
+                  price: input.product.price,
+                  originalStoreId: input.storeId,
+                  stock: input.product.stock,
+                  Product: {
+                    connect: {
+                      productId: product.productId,
+                    },
+                  },
+                },
+              });
+
+              const productInventory = await ctx.prisma.productInventory.create(
+                {
+                  data: {
+                    stock: input.product.stock,
+                    storeId: input.storeId,
+                    price: input.product.price,
+                    productId: prodSKU.productId,
+                    PaymentMethods: {
+                      connect: input.product.paymentMethods.map((method) => ({
+                        paymentMethodId: method,
+                      })),
+                    },
+                    sold: 0,
+                    comingSoon: 0,
                   },
                 }
               );
 
-            const productOverallRating =
-              await ctx.prisma.productReviewsCombinedResult.create({
-                data: {
-                  productId: product.productId,
-                  reviewsCount: 0,
-                  rating: 0,
+              await ctx.prisma.productSKU.update({
+                where: {
+                  productSKUId: prodSKU.productSKUId,
                 },
-                select: {
-                  productReviewsCombinedResultId: true,
+                data: {
+                  productInventoryIds: [productInventory.productInventoryId],
                 },
               });
 
-            await ctx.prisma.store.update({
-              where: {
-                storeId: input.storeID,
-              },
-              data: {
-                Products: store.Products.concat(product.productId),
-              },
-            });
+              await ctx.prisma.store.update({
+                where: {
+                  storeId: input.storeId,
+                },
+                data: {
+                  Products: store.Products.concat(product.productId),
+                },
+              });
 
-            const productF = await ctx.prisma.product.update({
-              where: {
-                productId: product.productId,
-              },
-              data: {
-                productInventoryId: productInventory.productInventoryId,
-                ProductReviewsCombinedResult:
-                  productOverallRating.productReviewsCombinedResultId,
-                OverallWrongInformationResult:
-                  overallWrongInfo.productWrongInformationReportsOverallId,
-              },
-            });
-            return productF;
+              const productF = await ctx.prisma.product.update({
+                where: {
+                  productId: product.productId,
+                },
+                data: {
+                  ProductReviewsCombinedResult:
+                    productOverallRating.productReviewsCombinedResultId,
+                  OverallWrongInformationResult:
+                    overallWrongInfo.productWrongInformationReportsOverallId,
+                },
+              });
+              return productF;
+            } else {
+              throw throwTRPCError({
+                code: "BAD_REQUEST",
+                message: "Provide atleast one data",
+              });
+            }
           } else {
             throw throwTRPCError({
               code: "BAD_REQUEST",
@@ -244,81 +325,103 @@ export const sellerRouter = createProtectedRouter()
     },
   })
   .mutation("removeProduct", {
-    input: z.string().uuid(),
+    input: z.object({
+      productSKUId: z.string(),
+      storeId: z.string().uuid(),
+    }),
     resolve: async ({ input, ctx }) => {
       try {
-        const product = await ctx.prisma.product.findUnique({
+        const product = await ctx.prisma.productSKU.findUnique({
           where: {
-            productId: input,
+            productSKUId: input.productSKUId,
           },
           select: {
-            productId: true,
-            storeId: true,
+            productSKUId: true,
+            productInventoryIds: true,
           },
         });
 
-        if (product) {
-          const store = await ctx.prisma.store.findUnique({
-            where: {
-              storeId: product.storeId,
-            },
-            select: {
-              userId: true,
-            },
+        const store = await ctx.prisma.store.findUnique({
+          where: {
+            storeId: input.storeId,
+          },
+          select: {
+            storeId: true,
+            userId: true,
+            Products: true,
+          },
+        });
+
+        if (!store) {
+          throw throwTRPCError({
+            code: "BAD_REQUEST",
+            message: "No store found",
           });
+        }
 
-          if (store) {
-            if (store.userId === ctx.session.user.id) {
-              await ctx.prisma.product.update({
-                where: {
-                  productId: input,
-                },
-                data: {
-                  deletedAt: new Date(),
-                },
-              });
-              const productInventory =
-                await ctx.prisma.productInventory.findUnique({
-                  where: {
-                    productId: input,
-                  },
-                  select: {
-                    productInventoryId: true,
-                  },
-                });
+        if (store.userId !== ctx.session.user.id) {
+          throw throwTRPCError({
+            code: "BAD_REQUEST",
+            message: "You are not the manager of this store",
+          });
+        }
 
-              if (productInventory) {
-                await ctx.prisma.productInventory.update({
-                  where: {
-                    productInventoryId: productInventory.productInventoryId,
-                  },
-                  data: {
-                    deletedAt: new Date(),
-                  },
-                });
-                return true;
-              } else {
-                throw throwTRPCError({
-                  code: "BAD_REQUEST",
-                  message: "No product found",
-                });
-              }
-            } else {
-              throw throwTRPCError({
-                code: "BAD_REQUEST",
-                message: "You are not the manager of this store",
-              });
-            }
-          } else {
-            throw throwTRPCError({
-              code: "BAD_REQUEST",
-              message: "No store found",
-            });
-          }
-        } else {
+        if (!product) {
           throw throwTRPCError({
             code: "BAD_REQUEST",
             message: "No product found",
+          });
+        }
+
+        // if (!store.Products.find((p) => p === product.productSKUId)) {
+        //   throw throwTRPCError({
+        //     code: "BAD_REQUEST",
+        //     message: "This product is not in your store",
+        //   });
+        // }
+
+        const productInventory = await ctx.prisma.productInventory.findFirst({
+          where: {
+            productId: product.productSKUId,
+            storeId: input.storeId,
+          },
+        });
+
+        if (!productInventory) {
+          throw throwTRPCError({
+            code: "BAD_REQUEST",
+            message: "This product is not in your store",
+          });
+        }
+
+        await ctx.prisma.productInventory.update({
+          where: {
+            productInventoryId: productInventory.productInventoryId,
+          },
+          data: {
+            deletedAt: new Date(),
+          },
+        });
+
+        const productUpSKU = await ctx.prisma.productSKU.update({
+          where: {
+            productSKUId: product.productSKUId,
+          },
+          data: {
+            productInventoryIds: product.productInventoryIds.filter(
+              (id) => id !== productInventory.productInventoryId
+            ),
+          },
+        });
+
+        if (productUpSKU.productInventoryIds.length === 0) {
+          await ctx.prisma.productSKU.update({
+            where: {
+              productSKUId: productUpSKU.productSKUId,
+            },
+            data: {
+              deletedAt: new Date(),
+            },
           });
         }
       } catch (err) {
@@ -368,13 +471,13 @@ export const sellerRouter = createProtectedRouter()
             productId: input.id,
           },
           select: {
-            storeId: true,
+            originalStoreId: true,
           },
         });
         if (prod) {
           const store = await ctx.prisma.store.findUnique({
             where: {
-              storeId: prod.storeId,
+              storeId: prod.originalStoreId,
             },
             select: {
               userId: true,
@@ -515,7 +618,7 @@ export const sellerRouter = createProtectedRouter()
                   },
                   AddressType: {
                     connect: {
-                      name: "storeReg",
+                      name: "REGULAR",
                     },
                   },
                   City: {
@@ -535,7 +638,7 @@ export const sellerRouter = createProtectedRouter()
                   contact: input.contactEmail,
                   ContactType: {
                     connect: {
-                      name: "storeRegEmail",
+                      name: "REGULAR",
                     },
                   },
                 },
@@ -689,7 +792,7 @@ export const sellerRouter = createProtectedRouter()
                       },
                       AddressType: {
                         connect: {
-                          name: "storeReg",
+                          name: "REGULAR",
                         },
                       },
                       City: {
@@ -710,7 +813,7 @@ export const sellerRouter = createProtectedRouter()
                       contact: input.store.contactEmail,
                       ContactType: {
                         connect: {
-                          name: "storeRegEmail",
+                          name: "REGULAR",
                         },
                       },
                     },

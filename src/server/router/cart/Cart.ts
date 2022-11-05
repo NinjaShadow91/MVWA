@@ -14,18 +14,86 @@ export const CartRouter = createProtectedRouter()
           },
           select: {
             cartId: true,
-            Items: true,
+            Items: {
+              where: {
+                deletedAt: null,
+              },
+            },
           },
         });
         if (!cart) {
-          throwTRPCError({
+          throw throwTRPCError({
             code: "NOT_FOUND",
             message: "Cart not found",
           });
         }
         return cart;
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
+          message: "Error getting cart",
+          cause: err,
+        });
+      }
+    },
+  })
+  .query("getDeliveryEstimate", {
+    input: z.object({}),
+    resolve: async ({ ctx }) => {
+      try {
+        const cart = await ctx.prisma.cart.findUnique({
+          where: {
+            userId: ctx.session.user.id,
+          },
+          select: {
+            cartId: true,
+            Items: {
+              where: {
+                deletedAt: null,
+              },
+            },
+          },
+        });
+        if (!cart) {
+          throw throwTRPCError({
+            code: "NOT_FOUND",
+            message: "Cart not found",
+          });
+        }
+        return 10;
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          message: "Error getting cart",
+          cause: err,
+        });
+      }
+    },
+  })
+  .query("getTaxEstimate", {
+    input: z.object({}),
+    resolve: async ({ ctx }) => {
+      try {
+        const cart = await ctx.prisma.cart.findUnique({
+          where: {
+            userId: ctx.session.user.id,
+          },
+          select: {
+            cartId: true,
+            Items: {
+              where: {
+                deletedAt: null,
+              },
+            },
+          },
+        });
+        if (!cart) {
+          throw throwTRPCError({
+            code: "NOT_FOUND",
+            message: "Cart not found",
+          });
+        }
+        return 10;
+      } catch (err) {
+        throw throwPrismaTRPCError({
           message: "Error getting cart",
           cause: err,
         });
@@ -40,59 +108,62 @@ export const CartRouter = createProtectedRouter()
     resolve: async ({ ctx, input }) => {
       try {
         const prod = await ctx.prisma.product.findUnique({
-          where: {
-            productId: input.productId,
+          where: { productId: input.productId },
+          select: {
+            productId: true,
+            deletedAt: true,
           },
         });
-        if (!prod) {
-          throwTRPCError({
+        if (prod === null || prod.deletedAt) {
+          throw throwTRPCError({
             code: "NOT_FOUND",
             message: "Product not found",
           });
-          const cart = await ctx.prisma.cart.findUnique({
-            where: {
-              userId: ctx.session.user.id,
-            },
-            select: {
-              cartId: true,
-              Items: {
-                select: {
-                  productId: true,
-                  cartItemId: true,
-                },
+        }
+        const cart = await ctx.prisma.cart.findUnique({
+          where: {
+            userId: ctx.session.user.id,
+          },
+          select: {
+            cartId: true,
+            Items: {
+              select: {
+                productId: true,
+                cartItemId: true,
+                deletedAt: true,
               },
+            },
+          },
+        });
+        if (!cart) {
+          throw throwTRPCError({
+            code: "NOT_FOUND",
+            message: "Cart not found",
+          });
+        }
+        const item = cart.Items.find(
+          (item) => item.productId === input.productId
+        );
+        if (item && !item.deletedAt) {
+          await ctx.prisma.cartItem.update({
+            where: {
+              cartItemId: item.cartItemId,
+            },
+            data: {
+              quantity: input.quantity,
             },
           });
-          if (!cart) {
-            throw throwTRPCError({
-              code: "NOT_FOUND",
-              message: "Cart not found",
-            });
-          }
-          const item = cart.Items.find(
-            (item) => item.productId === input.productId
-          );
-          if (item) {
-            await ctx.prisma.cartItem.update({
-              where: {
-                cartItemId: item.cartItemId,
-              },
-              data: {
-                quantity: input.quantity,
-              },
-            });
-          } else {
-            await ctx.prisma.cartItem.create({
-              data: {
-                quantity: input.quantity,
-                productId: input.productId,
-                cartId: cart.cartId,
-              },
-            });
-          }
+        } else {
+          await ctx.prisma.cartItem.create({
+            data: {
+              quantity: input.quantity,
+              productId: input.productId,
+              cartId: cart.cartId,
+            },
+          });
         }
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error adding item to cart",
           cause: err,
         });
@@ -130,14 +201,17 @@ export const CartRouter = createProtectedRouter()
           (item) => item.productId === input.productId
         );
         if (item) {
-          await ctx.prisma.cartItem.delete({
+          await ctx.prisma.cartItem.update({
             where: {
               cartItemId: item.cartItemId,
+            },
+            data: {
+              deletedAt: new Date(),
             },
           });
         }
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error removing item from cart",
           cause: err,
         });
@@ -174,7 +248,7 @@ export const CartRouter = createProtectedRouter()
           },
         });
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error clearing cart",
           cause: err,
         });
@@ -182,8 +256,8 @@ export const CartRouter = createProtectedRouter()
     },
   })
   .mutation("checkout", {
-    input: z.object({}),
-    resolve: async ({ ctx }) => {
+    input: z.object({ addressId: z.string().uuid() }),
+    resolve: async ({ ctx, input }) => {
       try {
         const cart = await ctx.prisma.cart.findUnique({
           where: {
@@ -192,6 +266,9 @@ export const CartRouter = createProtectedRouter()
           select: {
             cartId: true,
             Items: {
+              where: {
+                deletedAt: null,
+              },
               select: {
                 productId: true,
                 cartItemId: true,
@@ -209,23 +286,28 @@ export const CartRouter = createProtectedRouter()
 
         const itemConfig = await Promise.all(
           cart.Items.map(async (item) => {
-            const { stock } = (await ctx.prisma.productInventory.findUnique({
-              where: {
-                productId: item.productId,
-              },
-              select: {
-                stock: true,
-              },
-            })) ?? { stock: 0 };
+            const { stock, price } =
+              (await ctx.prisma.productInventory.findUnique({
+                where: {
+                  productInventoryId: item.productId,
+                },
+                select: {
+                  price: true,
+                  stock: true,
+                },
+              })) ?? { stock: 0, price: 0 };
             const productId = item.productId;
             const purchasable = stock >= item.quantity;
-            return { productId, purchasable };
+            const quantity = item.quantity;
+            const cost = item.quantity * price;
+            return { productId, purchasable, cost, quantity };
           })
         );
 
         itemConfig.forEach((item) => {
           if (!item.purchasable) {
-            throwTRPCError({
+            console.log("not purchasable", item);
+            throw throwTRPCError({
               code: "NOT_FOUND",
               message: "Product not found",
             });
@@ -238,7 +320,7 @@ export const CartRouter = createProtectedRouter()
           cart.Items.map((item) => {
             return ctx.prisma.productInventory.update({
               where: {
-                productId: item.productId,
+                productInventoryId: item.productId,
               },
               data: {
                 stock: {
@@ -248,6 +330,91 @@ export const CartRouter = createProtectedRouter()
             });
           });
 
+        const UserAddress = await ctx.prisma.userAddress.findUnique({
+          where: {
+            userAddressId: input.addressId,
+          },
+          select: {
+            line1: true,
+            line2: true,
+            City: {
+              select: {
+                name: true,
+                State: {
+                  select: {
+                    identifier: true,
+                    Country: {
+                      select: {
+                        code: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            LatitudeLongitude: {
+              select: {
+                lat: true,
+                long: true,
+              },
+            },
+            zipcode: true,
+          },
+        });
+
+        if (!UserAddress) {
+          throw throwTRPCError({
+            code: "NOT_FOUND",
+            message: "Address not found",
+          });
+        }
+
+        const city = await ctx.prisma.city.findFirst({
+          where: {
+            name: UserAddress.City.name,
+            State: {
+              identifier: UserAddress.City.State.identifier,
+              Country: {
+                code: UserAddress.City.State.Country.code,
+              },
+            },
+          },
+          select: {
+            cityId: true,
+          },
+        });
+
+        if (!city) {
+          throw throwTRPCError({
+            code: "NOT_FOUND",
+            message: "City not found",
+          });
+        }
+
+        const DeliveryAddress = await ctx.prisma.orderAddress.create({
+          data: {
+            line1: UserAddress.line1,
+            line2: UserAddress.line2,
+            City: {
+              connect: {
+                cityId: city.cityId,
+              },
+            },
+            LatitudeLongitude: {
+              create: {
+                lat: UserAddress.LatitudeLongitude.lat,
+                long: UserAddress.LatitudeLongitude.long,
+              },
+            },
+            zipcode: UserAddress.zipcode,
+            AddressType: {
+              connect: {
+                name: "StandardDelivery",
+              },
+            },
+          },
+        });
+
         transcationArray.push(
           ctx.prisma.orders.update({
             where: {
@@ -255,10 +422,16 @@ export const CartRouter = createProtectedRouter()
             },
             data: {
               OrderItems: {
-                create: cart.Items.map((item) => ({
+                create: itemConfig.map((item) => ({
+                  amount: item.cost,
+                  DeliveryAddress: {
+                    connect: {
+                      addressId: DeliveryAddress.orderAddressId,
+                    },
+                  },
                   OrderStatus: {
                     connect: {
-                      status: "PAID",
+                      name: "PAID",
                     },
                   },
                   productId: item.productId,
@@ -269,15 +442,18 @@ export const CartRouter = createProtectedRouter()
           })
         );
 
-        ctx.prisma.$transaction(transcationArray);
+        await ctx.prisma.$transaction(transcationArray);
 
-        await ctx.prisma.cartItem.deleteMany({
+        await ctx.prisma.cartItem.updateMany({
           where: {
             cartId: cart.cartId,
           },
+          data: {
+            deletedAt: new Date(),
+          },
         });
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error clearing cart",
           cause: err,
         });

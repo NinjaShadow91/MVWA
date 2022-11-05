@@ -1,10 +1,9 @@
-import { createRouter } from "../context";
+import { createProtectedRouter } from "../context";
 import { z } from "zod";
 import { throwPrismaTRPCError, throwTRPCError } from "../util";
 
-export const ProductRecommendationBasedOnPreviousOrders = createRouter().query(
-  "getBasedOnPreviousOrders",
-  {
+export const ProductRecommendationBasedOnPreviousOrders =
+  createProtectedRouter().query("getBasedOnPreviousOrders", {
     input: z.object({}).nullish(),
     resolve: async ({ ctx, input }) => {
       // add logic, now just random
@@ -13,7 +12,6 @@ export const ProductRecommendationBasedOnPreviousOrders = createRouter().query(
           select: {
             productId: true,
             name: true,
-            price: true,
             description: true,
             Media: { select: { mediaId: true } },
           },
@@ -27,29 +25,11 @@ export const ProductRecommendationBasedOnPreviousOrders = createRouter().query(
           });
         }
         return res;
-
-        // return [
-        //   {
-        //     productId: "1",
-        //     name: "Product 1",
-        //     price: 100,
-        //     description: "Product 1 description",
-        //     Media: [{ mediaId: "1" }],
-        //   },
-        //   {
-        //     productId: "2",
-        //     name: "Product 2",
-        //     price: 200,
-        //     description: "Product 2 description",
-        //     Media: [{ mediaId: "2" }],
-        //   },
-        // ];
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error getting favourite products",
           cause: err,
         });
       }
     },
-  }
-);
+  });

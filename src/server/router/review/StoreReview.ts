@@ -16,7 +16,7 @@ export const storeReviewRouter = createProtectedRouter()
           return review.deletedAt ? false : true;
         });
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching store reviews",
         });
@@ -36,7 +36,7 @@ export const storeReviewRouter = createProtectedRouter()
           return review.deletedAt ? false : true;
         });
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching store reviews",
         });
@@ -60,7 +60,7 @@ export const storeReviewRouter = createProtectedRouter()
         }
         return review;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching store review",
         });

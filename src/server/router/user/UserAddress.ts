@@ -16,7 +16,7 @@ export const userAddressRouter = createProtectedRouter()
           return address.deletedAt ? false : true;
         });
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching user address",
         });
@@ -40,7 +40,7 @@ export const userAddressRouter = createProtectedRouter()
         }
         return address;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching user address",
         });

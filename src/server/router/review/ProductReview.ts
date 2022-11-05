@@ -21,7 +21,7 @@ const ProtectedProductReviewRouter = createProtectedRouter()
           return review.deletedAt ? false : true;
         });
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching product reviews",
         });
@@ -302,7 +302,7 @@ const ProtectedProductReviewRouter = createProtectedRouter()
 
         return review;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while creating product review",
         });
@@ -493,7 +493,7 @@ const ProtectedProductReviewRouter = createProtectedRouter()
         });
         return review;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while updating product review",
         });
@@ -537,7 +537,7 @@ const ProtectedProductReviewRouter = createProtectedRouter()
         });
         return true;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while deleting product review",
         });
@@ -566,7 +566,7 @@ export const productReviewRouter = createRouter()
           return review.deletedAt ? false : true;
         });
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching product reviews",
         });
@@ -586,7 +586,7 @@ export const productReviewRouter = createRouter()
         );
         return review;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching product reviews",
         });
@@ -610,7 +610,7 @@ export const productReviewRouter = createRouter()
         }
         return review;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching product review",
         });

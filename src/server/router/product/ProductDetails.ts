@@ -5,7 +5,7 @@ import { throwPrismaTRPCError, throwTRPCError } from "../util";
 export const productRouter = createRouter()
   .query("getProductDetails", {
     input: z.object({
-      productId: z.string(),
+      productId: z.string().uuid(),
     }),
     resolve: async ({ input, ctx }) => {
       const { productId } = input;
@@ -18,8 +18,6 @@ export const productRouter = createRouter()
             description: true,
             returnFrame: true,
             replaceFrame: true,
-            price: true,
-            productInventoryId: true,
             giftOptionAvailable: true,
             Details: {
               select: {
@@ -31,8 +29,7 @@ export const productRouter = createRouter()
             TechnicalDetails: true,
             Media: true,
             Category: true,
-            IsVariantOf: true,
-            OtherVariants: true,
+            ProductSKU: true,
           },
         });
         if (product === null) {
@@ -42,6 +39,53 @@ export const productRouter = createRouter()
           });
         }
         return product;
+      } catch (err) {
+        throw throwTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the product data",
+        });
+      }
+    },
+  })
+  .query("getProductsDetails", {
+    input: z.object({
+      productIds: z.string().uuid().array(),
+    }),
+    resolve: async ({ input, ctx }) => {
+      try {
+        const products = [];
+        for (let i = 0; i < input.productIds.length; i++) {
+          const product = await ctx.prisma.product.findUnique({
+            where: { productId: input.productIds[i] },
+            select: {
+              productId: true,
+              name: true,
+              description: true,
+              returnFrame: true,
+              replaceFrame: true,
+              giftOptionAvailable: true,
+              Details: {
+                select: {
+                  heading: true,
+                  description: true,
+                  Media: true,
+                },
+              },
+              TechnicalDetails: true,
+              Media: true,
+              Category: true,
+              ProductSKU: true,
+            },
+          });
+          if (product === null) {
+            throw throwTRPCError({
+              message: "Product not found",
+              code: "NOT_FOUND",
+            });
+          }
+          products.push(product);
+        }
+        return products;
       } catch (err) {
         throw throwTRPCError({
           cause: err,

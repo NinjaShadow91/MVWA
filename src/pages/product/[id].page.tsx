@@ -2,7 +2,11 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { CheckIcon, StarIcon } from "@heroicons/react/20/solid";
+import {
+  CheckIcon,
+  StarIcon,
+  XMarkIcon as XIcon,
+} from "@heroicons/react/20/solid";
 import { trpc } from "../../utils/trpc";
 import { Media } from "../utils/utils";
 
@@ -13,8 +17,10 @@ function classNames(...classes) {
 export default function ProductDescription() {
   const router = useRouter();
   const trpcBuyNow = trpc.useMutation(["order.placeOrder"]);
-  const trpcAddToCart = trpc.useMutation(["cart.addToCart"]);
-  const trpcSaveForLatter = trpc.useMutation(["cart.saveForLatter"]);
+  const trpcAddToCart = trpc.useMutation(["cart.addItem"]);
+  const trpcSaveForLatter = trpc.useMutation([
+    "product.savedForLatter.addItem",
+  ]);
   const trpcWriteReview = trpc.useMutation([
     "product.review.protected.createProductReview",
   ]);
@@ -166,10 +172,24 @@ export default function ProductDescription() {
   }
 
   function buyNow() {
+    console.log("buy now", product.ProductSKU[0].productInventoryIds[0]);
     trpcBuyNow.mutate(
       {
-        productId: productId,
+        productId: product.ProductSKU[0].productInventoryIds[0],
         quantity: quantity,
+        receiver: {
+          name: "RecieverCheck",
+          contact: "1234567890",
+        },
+        newDeliveryAddress: {
+          line1: "line1",
+          line2: "line2",
+          city: "Delhi",
+          state: "Delhi",
+          country: "IN",
+          zipcode: "110001",
+          addressType: "NORMAL",
+        },
       },
       {
         onSuccess: (data) => {
@@ -181,6 +201,36 @@ export default function ProductDescription() {
         },
       }
     );
+  }
+
+  function addToCart() {
+    trpcAddToCart.mutate(
+      {
+        productId: productId,
+        quantity: quantity,
+      },
+      {
+        onSuccess: (data) => {
+          console.log(data);
+        },
+        onError: (error) => {
+          alert("Cant add to cart, please tryr again..");
+          console.log(error);
+        },
+      }
+    );
+  }
+
+  function saveForLatter() {
+    trpcSaveForLatter.mutate(productId, {
+      onSuccess: (data) => {
+        console.log(data);
+      },
+      onError: (error) => {
+        alert("Cant save for latter, please tryr again..");
+        console.log(error);
+      },
+    });
   }
 
   if (status === "loading") return <div>Loading...</div>;
@@ -269,9 +319,12 @@ export default function ProductDescription() {
             {/* Product image */}
             <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
               <div className="aspect-w-1 aspect-h-1 overflow-hidden rounded-lg">
-                {product.Media && product.Media.length !== 0 && (
-                  <Media media={product.Media[0].mediaId}></Media>
-                )}
+                {product.Media &&
+                  product.Media.length !== 0 &&
+                  // <Media media={product.Media[0].mediaId}></Media>
+                  product.Media.map((media) => (
+                    <Media key={media.mediaId} media={media.mediaId}></Media>
+                  ))}
               </div>
             </div>
 
@@ -284,8 +337,8 @@ export default function ProductDescription() {
                       onClick={() => {
                         buyNow();
                       }}
-                      type="submit"
-                      className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                      type="button"
+                      className="flex w-full m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     >
                       Buy Now
                     </button>
@@ -293,8 +346,8 @@ export default function ProductDescription() {
                       onClick={() => {
                         addToCart();
                       }}
-                      type="submit"
-                      className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                      type="button"
+                      className="flex w-full m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     >
                       Add to Cart
                     </button>
@@ -302,8 +355,8 @@ export default function ProductDescription() {
                       onClick={() => {
                         saveForLatter();
                       }}
-                      type="submit"
-                      className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                      type="button"
+                      className="flex w-full  m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
                     >
                       Save For Later
                     </button>

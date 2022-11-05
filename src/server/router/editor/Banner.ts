@@ -28,7 +28,7 @@ export const BannerRouter = createRouter().query("get", {
       }
       return res;
     } catch (err) {
-      throwPrismaTRPCError({
+      throw throwPrismaTRPCError({
         message: "Error getting banner",
         cause: err,
       });

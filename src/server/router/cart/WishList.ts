@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createProtectedRouter } from "../context";
 import { throwPrismaTRPCError, throwTRPCError } from "../util";
 
+// add address to wishlist and allow to buy from wishlist
 export const WishlistRouter = createProtectedRouter()
   .query("getWishlist", {
     input: z.object({
@@ -196,6 +197,7 @@ export const WishlistRouter = createProtectedRouter()
       name: z.string(),
       description: z.string().nullish(),
       authorizedUserIds: z.array(z.string().uuid()).nullish(),
+      addressIds: z.string().uuid().array().nullish(),
     }),
     resolve: async ({ input, ctx }) => {
       try {

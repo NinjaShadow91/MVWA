@@ -16,7 +16,7 @@ export const userContactRouter = createProtectedRouter()
           return contact.deletedAt ? false : true;
         });
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching user contacts",
         });
@@ -40,7 +40,7 @@ export const userContactRouter = createProtectedRouter()
         }
         return contact;
       } catch (e) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           cause: e,
           message: "Error while fetching user contact",
         });

@@ -18,7 +18,7 @@ export const FavouriteProductsRouter = createRouter().query("get", {
           select: {
             productId: true,
             name: true,
-            price: true,
+            ProductSKU: true,
             description: true,
             Media: { select: { mediaId: true } },
           },
@@ -29,7 +29,7 @@ export const FavouriteProductsRouter = createRouter().query("get", {
           select: {
             productId: true,
             name: true,
-            price: true,
+            ProductSKU: true,
             description: true,
             Media: { select: { mediaId: true } },
           },
@@ -37,7 +37,7 @@ export const FavouriteProductsRouter = createRouter().query("get", {
         });
       }
     } catch (err) {
-      throwPrismaTRPCError({
+      throw throwPrismaTRPCError({
         message: "Error getting favourite products",
         cause: err,
       });

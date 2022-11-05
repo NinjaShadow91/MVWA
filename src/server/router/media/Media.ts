@@ -14,12 +14,12 @@ export const MediaRouter = createRouter().query("get", {
       if (media && media.deletedAt === null) {
         return media;
       } else {
-        throwTRPCError({
+        throw throwTRPCError({
           message: "Media not found",
         });
       }
     } catch (err) {
-      throwPrismaTRPCError({
+      throw throwPrismaTRPCError({
         message: "Error getting media",
         cause: err,
       });

@@ -17,14 +17,14 @@ export const SaveForLatter = createProtectedRouter()
           },
         });
         if (!cart) {
-          throwTRPCError({
+          throw throwTRPCError({
             code: "NOT_FOUND",
             message: "Cart not found",
           });
         }
         return cart;
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error getting cart",
           cause: err,
         });
@@ -63,7 +63,7 @@ export const SaveForLatter = createProtectedRouter()
         }
         const product = prods.products.find((p) => p === prod.productId);
         if (product) {
-          throwTRPCError({
+          throw throwTRPCError({
             code: "BAD_REQUEST",
             message: "Product already in cart",
           });
@@ -82,7 +82,7 @@ export const SaveForLatter = createProtectedRouter()
         });
         return newCart;
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error adding item to cart",
           cause: err,
         });
@@ -110,7 +110,7 @@ export const SaveForLatter = createProtectedRouter()
         }
         const product = prods.products.find((p) => p === input);
         if (!product) {
-          throwTRPCError({
+          throw throwTRPCError({
             code: "BAD_REQUEST",
             message: "Product not saved",
           });
@@ -129,7 +129,7 @@ export const SaveForLatter = createProtectedRouter()
         });
         return newCart;
       } catch (err) {
-        throwPrismaTRPCError({
+        throw throwPrismaTRPCError({
           message: "Error adding item to cart",
           cause: err,
         });

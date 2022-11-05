@@ -22,6 +22,7 @@ import { ProductRecommendationBasedOnPreviousOrders } from "./personalisation/Ba
 import { CartRouter } from "./cart/Cart";
 import { SaveForLatter } from "./cart/SaveForLatter";
 import { WishlistRouter } from "./cart/WishList";
+import { insertData } from "../db/test";
 
 export const appRouter = createRouter()
   .transformer(superjson)
@@ -44,8 +45,14 @@ export const appRouter = createRouter()
   .merge("editor.banner.", BannerRouter)
   .merge("personalisation.", ProductRecommendationBasedOnPreviousOrders)
   .merge("cart.", CartRouter)
-  .merge("product.saveForLatter.", SaveForLatter)
+  .merge("product.savedForLatter.", SaveForLatter)
   .merge("product.wishlist.", WishlistRouter);
+
+// try {
+//   insertData();
+// } catch (err) {
+//   console.log(err);
+// }
 
 // export type definition of API
 export type AppRouter = typeof appRouter;

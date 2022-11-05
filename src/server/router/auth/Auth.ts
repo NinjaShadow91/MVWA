@@ -262,6 +262,7 @@ export const authRouter = createRouter()
       dob: z.string(),
       name: z.string(),
       password: z.string(),
+      // mobilePhoneNumber: z.string(),
     }),
     async resolve({ ctx, input }) {
       let _dob: Date;
@@ -340,6 +341,11 @@ export const authRouter = createRouter()
                     contacts: [],
                     wishlists: [],
                     othersWishlist: [],
+                    UserType: {
+                      connect: {
+                        name: "DEFAULT",
+                      },
+                    },
                   },
                 });
                 const auth = await ctx.prisma.userAuthentication.create({
@@ -370,6 +376,41 @@ export const authRouter = createRouter()
                   },
                 });
 
+                const userNotificationProfile =
+                  await ctx.prisma.userNotificationProfile.create({
+                    data: {
+                      userId: user.id,
+                      Preferences: {
+                        create: [
+                          {
+                            NotificationType: {
+                              connect: {
+                                name: "EMAIL",
+                              },
+                            },
+                            PreferenceLevel: {
+                              connect: {
+                                level: 3,
+                              },
+                            },
+                          },
+                          {
+                            NotificationType: {
+                              connect: {
+                                name: "SMS",
+                              },
+                            },
+                            PreferenceLevel: {
+                              connect: {
+                                level: 3, // defaault level
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  });
+
                 const cart = await ctx.prisma.cart.create({
                   data: {
                     userId: user.id,
@@ -381,16 +422,38 @@ export const authRouter = createRouter()
                       userId: user.id,
                     },
                   });
-                const wishlist = await ctx.prisma.wishlist.create({
-                  data: {
-                    userId: user.id,
-                  },
-                });
                 const orders = await ctx.prisma.orders.create({
                   data: {
                     userId: user.id,
                   },
                 });
+
+                // cannot contact user reciever in this case
+                const orderRecievers =
+                  await ctx.prisma.userOrderRecievers.create({
+                    data: {
+                      userId: user.id,
+                      UserOrderRecievers: {
+                        create: [
+                          {
+                            name: input.name,
+                            // Contacts: {
+                            //   create: [
+                            //     {
+                            //       ContactType: {
+                            //         connect: {
+                            //           name: "MobilePhone",
+                            //         },
+                            //       },
+                            //       contact: input.mobilePhoneNumber,
+                            //     },
+                            //   ],
+                            // },
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await ctx.prisma.user.update({
                   where: {
@@ -402,8 +465,10 @@ export const authRouter = createRouter()
                     cart: cart.cartId,
                     savedForLaterProducts:
                       savedForLaterProducts.savedForLaterProductsId,
-                    wishlists: { push: wishlist.wishlistId },
                     orders: orders.ordersId,
+                    userNotificationProfile:
+                      userNotificationProfile.userNotificationProfileId,
+                    userOrderRecieversId: orderRecievers.userOrderRecieversId,
                   },
                 });
                 return { id: user.id, name: user.name, email: user.email };
@@ -444,6 +509,7 @@ export const authRouter = createRouter()
       dob: z.string(),
       name: z.string(),
       password: z.string(),
+      // mobilePhoneNumber: z.string(),
     }),
     async resolve({ ctx, input }) {
       let _dob: Date;
@@ -486,6 +552,11 @@ export const authRouter = createRouter()
               contacts: [],
               wishlists: [],
               othersWishlist: [],
+              UserType: {
+                connect: {
+                  name: "DEFAULT",
+                },
+              },
             },
           });
           const auth = await ctx.prisma.userAuthentication.create({
@@ -527,14 +598,68 @@ export const authRouter = createRouter()
                 userId: user.id,
               },
             });
-          const wishlist = await ctx.prisma.wishlist.create({
+          const orders = await ctx.prisma.orders.create({
             data: {
               userId: user.id,
             },
           });
-          const orders = await ctx.prisma.orders.create({
+          const userNotificationProfile =
+            await ctx.prisma.userNotificationProfile.create({
+              data: {
+                userId: user.id,
+                Preferences: {
+                  create: [
+                    {
+                      NotificationType: {
+                        connect: {
+                          name: "EMAIL",
+                        },
+                      },
+                      PreferenceLevel: {
+                        connect: {
+                          level: 3, // defaault level
+                        },
+                      },
+                    },
+                    {
+                      NotificationType: {
+                        connect: {
+                          name: "SMS",
+                        },
+                      },
+                      PreferenceLevel: {
+                        connect: {
+                          level: 3, // defaault level
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            });
+
+          const orderRecievers = await ctx.prisma.userOrderRecievers.create({
             data: {
               userId: user.id,
+              UserOrderRecievers: {
+                create: [
+                  {
+                    name: input.name,
+                    // Contacts: {
+                    //   create: [
+                    //     {
+                    //       ContactType: {
+                    //         connect: {
+                    //           name: "MobilePhone",
+                    //         },
+                    //       },
+                    //       contact: input.mobilePhoneNumber,
+                    //     },
+                    //   ],
+                    // },
+                  },
+                ],
+              },
             },
           });
 
@@ -548,8 +673,10 @@ export const authRouter = createRouter()
               cart: cart.cartId,
               savedForLaterProducts:
                 savedForLaterProducts.savedForLaterProductsId,
-              wishlists: { push: wishlist.wishlistId },
               orders: orders.ordersId,
+              userNotificationProfile:
+                userNotificationProfile.userNotificationProfileId,
+              userOrderRecieversId: orderRecievers.userOrderRecieversId,
             },
           });
           return { id: user.id, name: user.name, email: user.email };

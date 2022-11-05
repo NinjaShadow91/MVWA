@@ -53,7 +53,7 @@ export const FeaturedPostsRouter = createRouter().query("get", {
       }
       return posts[0];
     } catch (err) {
-      throwPrismaTRPCError({
+      throw throwPrismaTRPCError({
         message: "Error getting favourite products",
         cause: err,
       });

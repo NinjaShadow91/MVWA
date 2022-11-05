@@ -61,3 +61,7 @@ export const Media = ({ media }: { media: string }) => {
 export const getProductLink = (productId: string) => {
   return `http://localhost:3000/product/${productId}`;
 };
+
+export const getOrderLink = (orderId: string) => {
+  return `http://localhost:3000/user/order/${orderId}`;
+};
