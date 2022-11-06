@@ -8,7 +8,11 @@ import {
   XMarkIcon as XIcon,
 } from "@heroicons/react/20/solid";
 import { trpc } from "../../utils/trpc";
-import { Media } from "../utils/utils";
+import {
+  getProductDescription,
+  getProductDescriptionSecure,
+  Media,
+} from "../utils/utils";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -31,9 +35,13 @@ export default function ProductDescription() {
     "product.review.protected.deleteProductReview",
   ]);
   const [productId, setProductId] = useState("");
+  const [productSKUId, setProductSKUId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState("loading");
   const [product, setProduct] = useState<any | null>(null);
+  const [productInventories, setProductInventories] = useState<any | null>(
+    null
+  );
   const [reviews, setReviews] = useState<any | null>(null);
   const [overallReview, setOverallReview] = useState<any | null>(null);
   const [reviewContent, setReviewContent] = useState("");
@@ -49,6 +57,7 @@ export default function ProductDescription() {
     onSuccess: (data) => {
       console.log(data);
       setProduct(data);
+      setProductSKUId(data.ProductSKU[0]?.productSKUId ?? "");
       setStatus("loaded");
     },
     onError: (error) => {
@@ -80,6 +89,22 @@ export default function ProductDescription() {
       // setStatus("error");
     },
   });
+
+  trpc.useQuery(
+    ["product.inventory.getProductInventories", { productSKUId: productSKUId }],
+    {
+      enabled: productSKUId !== null,
+      onSuccess: (data) => {
+        console.log(data);
+        setProductInventories(data);
+        // setStatus("loaded");
+      },
+      onError: (error) => {
+        console.log(error);
+        setStatus("error");
+      },
+    }
+  );
 
   trpc.useQuery(["product.review.getProductReviewsForProduct", productId], {
     enabled: productId !== "",
@@ -206,7 +231,7 @@ export default function ProductDescription() {
   function addToCart() {
     trpcAddToCart.mutate(
       {
-        productId: productId,
+        productId: product.ProductSKU[0].productSKUId,
         quantity: quantity,
       },
       {
@@ -233,87 +258,6 @@ export default function ProductDescription() {
     });
   }
 
-  // [text](link)
-  function getProductDescription(desc: string) {
-    const elements: ReactElement[] = [];
-    const caseSensitive = true;
-    const searchStr1 = "[";
-    const searchStr2 = "]";
-    const searchStr3 = "(";
-    const searchStr4 = ")";
-    let startIndex = 0;
-    if (!caseSensitive) {
-      desc = desc.toLowerCase();
-    }
-
-    while (startIndex > -1) {
-      const index1 = desc.indexOf(searchStr1, startIndex);
-      const index2 = desc.indexOf(searchStr2, index1);
-      const index3 = desc.indexOf(searchStr3, index2);
-      const index4 = desc.indexOf(searchStr4, index3);
-      // console.log(startIndex, index1, index2, index3, index4);
-      if (index1 > -1 && index2 > -1 && index3 > -1 && index4 > -1) {
-        elements.push(<span>{desc.substring(startIndex, index1)}</span>);
-        elements.push(
-          <a
-            className="text-blue-500"
-            href={desc.substring(index3 + 1, index4)}
-          >
-            {desc.substring(index1 + 1, index2)}
-          </a>
-        );
-        startIndex = index4 + 1;
-      } else {
-        elements.push(<span>{desc.substring(startIndex, desc.length)}</span>);
-        startIndex = -1;
-      }
-    }
-    console.log(elements);
-    return elements;
-  }
-
-  function getProductDescriptionSecure(desc: string) {
-    const elements: ReactElement[] = [];
-    const caseSensitive = true;
-    const searchStr1 = "[";
-    const searchStr2 = "]";
-    const searchStr3 = "(";
-    const searchStr4 = ")";
-    let startIndex = 0;
-    if (!caseSensitive) {
-      desc = desc.toLowerCase();
-    }
-
-    while (startIndex > -1) {
-      const index1 = desc.indexOf(searchStr1, startIndex);
-      const index2 = desc.indexOf(searchStr2, index1);
-      const index3 = desc.indexOf(searchStr3, index2);
-      const index4 = desc.indexOf(searchStr4, index3);
-      if (index1 > -1 && index2 > -1 && index3 > -1 && index4 > -1) {
-        elements.push(<span>{desc.substring(startIndex + 1, index1)}</span>);
-        if (
-          desc.substring(index3 + 1, index4).startsWith("http") ||
-          desc.substring(index3 + 1, index4).startsWith("https")
-        ) {
-          elements.push(
-            <a
-              className="text-blue-500"
-              href={desc.substring(index3 + 1, index4)}
-            >
-              {desc.substring(index1 + 1, index2)}
-            </a>
-          );
-        }
-        startIndex = index4 + 1;
-      } else {
-        elements.push(<span>{desc.substring(startIndex, desc.length)}</span>);
-        startIndex = -1;
-      }
-    }
-    console.log(elements);
-    return elements;
-  }
-
   if (status === "loading") return <div>Loading...</div>;
   if (status === "error") return <div>Error</div>;
   return (
@@ -337,7 +281,8 @@ export default function ProductDescription() {
 
                 <div className="flex items-center">
                   <p className="text-lg text-gray-900 sm:text-xl">
-                    Price: {product.price}(INR)
+                    Price: {productInventories && productInventories[0].price}
+                    (INR)
                   </p>
 
                   <div className="ml-4 border-l border-gray-300 pl-4">

@@ -57,9 +57,12 @@ const SignOut: NextPage = () => {
               src="/public/logo.png"
               alt="MVWA Logo"
             />
+            <p className="mt-2 text-center text-3xl font-extrabold text-gray-900">
+              Are you sure you want to sign out?
+            </p>
             <button
-              className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900"
-              onClick={() => signOut()}
+              className="w-full flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={() => signOut({ callbackUrl: "/" })}
             >
               Sign Out
             </button>

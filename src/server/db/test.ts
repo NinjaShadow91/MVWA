@@ -317,9 +317,9 @@ export async function insertData() {
                   },
                 });
 
-                const userAddress = await prisma.userAddress.create({
-                  data: {},
-                });
+                // const userAddress = await prisma.userAddress.create({
+                //   data: {},
+                // });
 
                 const userNotificationProfile =
                   await prisma.userNotificationProfile.create({
@@ -902,7 +902,7 @@ export async function insertData() {
               stock: inputP.product.stock,
               storeId: inputP.storeId,
               price: inputP.product.price,
-              productId: prodSKU.productId,
+              productId: prodSKU.productSKUId,
               PaymentMethods: {
                 connect: inputP.product.paymentMethods.map((method) => ({
                   paymentMethodId: method,

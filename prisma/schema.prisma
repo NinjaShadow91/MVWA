@@ -769,6 +769,14 @@ model Links {
     updatedAt DateTime @updatedAt
 }
 
+// newspaper service
+model NewsletterSubscribedUser {
+    id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    email     String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
 //Offer service
 // Offers for products and its subtypes
 model Offer {

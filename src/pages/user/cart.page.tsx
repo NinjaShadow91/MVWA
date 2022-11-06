@@ -8,7 +8,11 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { trpc } from "../../utils/trpc";
 import { useState } from "react";
-import { getProductLink, Media } from "../utils/utils";
+import {
+  getProductLink,
+  getProductDescriptionSecure,
+  Media,
+} from "../utils/utils";
 import { useRouter } from "next/router";
 
 function classNames(...classes) {
@@ -29,7 +33,7 @@ export default function UserCart() {
     useState<any | null>([]);
   trpc.useQuery(["cart.getCart", {}], {
     onSuccess: (data) => {
-      setCartItems(data?.Items.map((item) => item.productId));
+      setCartItems(data.Items.map((item) => item.productId));
       setCart(data);
     },
     onError: (err) => {
@@ -37,7 +41,7 @@ export default function UserCart() {
     },
   });
 
-  trpc.useQuery(["product.getProductsDetails", { productIds: cartItems }], {
+  trpc.useQuery(["product.getProductSKUsDetails", { productIds: cartItems }], {
     enabled: !!cartItems,
     onSuccess: (data) => {
       setProducts(data);
@@ -121,7 +125,7 @@ export default function UserCart() {
       {
         onSuccess: (data) => {
           console.log(data);
-          router.push("http://localhost:3000/user/order/orders");
+          router.push("http://localhost:3000/user/order/all");
         },
         onError: (err) => {
           console.log(err);
@@ -174,7 +178,7 @@ export default function UserCart() {
                           </div>
                           <div className="mt-1 flex text-sm">
                             <p className="text-gray-500">
-                              {product.description}
+                              {getProductDescriptionSecure(product.description)}
                             </p>
                           </div>
                           <p className="mt-1 text-sm font-medium text-gray-900">

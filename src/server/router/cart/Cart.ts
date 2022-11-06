@@ -107,10 +107,10 @@ export const CartRouter = createProtectedRouter()
     }),
     resolve: async ({ ctx, input }) => {
       try {
-        const prod = await ctx.prisma.product.findUnique({
-          where: { productId: input.productId },
+        const prod = await ctx.prisma.productSKU.findUnique({
+          where: { productSKUId: input.productId },
           select: {
-            productId: true,
+            productSKUId: true,
             deletedAt: true,
           },
         });

@@ -22,6 +22,7 @@ import { ProductRecommendationBasedOnPreviousOrders } from "./personalisation/Ba
 import { CartRouter } from "./cart/Cart";
 import { SaveForLatter } from "./cart/SaveForLatter";
 import { WishlistRouter } from "./cart/WishList";
+import { NewsletterRouter } from "./newspaper/Subsribe";
 import { insertData } from "../db/test";
 
 export const appRouter = createRouter()
@@ -46,7 +47,8 @@ export const appRouter = createRouter()
   .merge("personalisation.", ProductRecommendationBasedOnPreviousOrders)
   .merge("cart.", CartRouter)
   .merge("product.savedForLatter.", SaveForLatter)
-  .merge("product.wishlist.", WishlistRouter);
+  .merge("product.wishlist.", WishlistRouter)
+  .merge("newsletter.", NewsletterRouter);
 
 // try {
 //   insertData();

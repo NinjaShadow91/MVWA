@@ -127,70 +127,30 @@ export const productInventoryRouter = createRouter()
       }
     },
   })
-  .query("getProductPrice", {
+  .query("getProductInventories", {
     input: z.object({
-      id: z.string(),
+      productSKUId: z.string().uuid(),
     }),
-    output: z.object({
-      isPresent: z.boolean(),
-      price: z.number().nullish(),
-    }),
-    async resolve({ ctx, input }) {
+    resolve: async ({ input, ctx }) => {
+      const { productSKUId } = input;
       try {
-        const { price, deletedAt } =
-          (await ctx.prisma.productInventory.findUnique({
-            where: { productId: input.id },
-            select: {
-              price: true,
-              deletedAt: true,
-            },
-          })) ?? { price: null, deletedAt: null };
-        if (price && !deletedAt) return { isPresent: true, price: price };
-        else {
-          throw throwTRPCError({
-            message: "Product Inventory not found",
-            code: "NOT_FOUND",
-          });
-          // return { isPresent: false };
-        }
-      } catch (err) {
-        throw throwPrismaTRPCError({
-          cause: err,
-          message: "Something went bad while fetching the product data",
+        const productInventories = await ctx.prisma.productInventory.findMany({
+          where: { productId: productSKUId },
+          select: {
+            productInventoryId: true,
+            price: true,
+            stock: true,
+            productId: true,
+            comingSoon: true,
+            deletedAt: true,
+          },
         });
-      }
-    },
-  })
-  .query("getProductStockDetails", {
-    input: z.object({
-      id: z.string(),
-    }),
-    output: z.object({
-      isPresent: z.boolean(),
-      stock: z.number().nullish(),
-    }),
-    async resolve({ ctx, input }) {
-      try {
-        const { stock, deletedAt } =
-          (await ctx.prisma.productInventory.findUnique({
-            where: { productId: input.id },
-            select: {
-              deletedAt: true,
-              stock: true,
-            },
-          })) ?? { stock: null };
-        if (stock && !deletedAt) return { isPresent: true, price: stock };
-        else {
-          throw throwTRPCError({
-            message: "Product Inventory not found",
-            code: "NOT_FOUND",
-          });
-          // return { isPresent: false };
-        }
+        return productInventories;
       } catch (err) {
-        throw throwPrismaTRPCError({
+        throw throwTRPCError({
           cause: err,
-          message: "Something went bad while fetching the product data",
+          message:
+            "Something went bad while fetching the product inventory data",
         });
       }
     },

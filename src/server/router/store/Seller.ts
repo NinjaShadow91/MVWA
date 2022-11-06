@@ -3,6 +3,7 @@ import { createProtectedRouter } from "../context";
 import { throwPrismaTRPCError, throwTRPCError } from "../util";
 
 // create update sku, update not create new detail media ,etc in updates
+// update Update product
 
 export const sellerRouter = createProtectedRouter()
   .query("getStoreDetails", {
@@ -256,7 +257,7 @@ export const sellerRouter = createProtectedRouter()
                     stock: input.product.stock,
                     storeId: input.storeId,
                     price: input.product.price,
-                    productId: prodSKU.productId,
+                    productId: prodSKU.productSKUId,
                     PaymentMethods: {
                       connect: input.product.paymentMethods.map((method) => ({
                         paymentMethodId: method,

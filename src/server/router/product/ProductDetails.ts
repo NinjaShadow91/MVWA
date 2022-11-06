@@ -94,6 +94,45 @@ export const productRouter = createRouter()
       }
     },
   })
+  .query("getProductSKUsDetails", {
+    input: z.object({
+      productSKUIds: z.string().uuid().array(),
+    }),
+    resolve: async ({ input, ctx }) => {
+      try {
+        const productSKUs = [];
+        for (let i = 0; i < input.productSKUIds.length; i++) {
+          const productSKU = await ctx.prisma.productSKU.findUnique({
+            where: { productSKUId: input.productSKUIds[i] },
+            select: {
+              productSKUId: true,
+              skuName: true,
+              description: true,
+              price: true,
+              stock: true,
+              comingSoon: true,
+              Product: true,
+              ProductInventory: true,
+              Media: true,
+            },
+          });
+          if (productSKU === null) {
+            throw throwTRPCError({
+              message: "Product SKU not found",
+              code: "NOT_FOUND",
+            });
+          }
+          productSKUs.push(productSKU);
+        }
+        return productSKUs;
+      } catch (err) {
+        throw throwTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the product SKU data",
+        });
+      }
+    },
+  })
   .query("getProductIDsOfCategory", {
     input: z.object({
       id: z.string().uuid().nullish(),

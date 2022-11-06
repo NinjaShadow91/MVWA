@@ -65,3 +65,79 @@ export const getProductLink = (productId: string) => {
 export const getOrderLink = (orderId: string) => {
   return `http://localhost:3000/user/order/${orderId}`;
 };
+
+// [text](link)
+export function getProductDescription(desc: string) {
+  const elements: ReactElement[] = [];
+  const caseSensitive = true;
+  const searchStr1 = "[";
+  const searchStr2 = "]";
+  const searchStr3 = "(";
+  const searchStr4 = ")";
+  let startIndex = 0;
+  if (!caseSensitive) {
+    desc = desc.toLowerCase();
+  }
+
+  while (startIndex > -1) {
+    const index1 = desc.indexOf(searchStr1, startIndex);
+    const index2 = desc.indexOf(searchStr2, index1);
+    const index3 = desc.indexOf(searchStr3, index2);
+    const index4 = desc.indexOf(searchStr4, index3);
+    // console.log(startIndex, index1, index2, index3, index4);
+    if (index1 > -1 && index2 > -1 && index3 > -1 && index4 > -1) {
+      elements.push(<span>{desc.substring(startIndex, index1)}</span>);
+      elements.push(
+        <a className="text-blue-500" href={desc.substring(index3 + 1, index4)}>
+          {desc.substring(index1 + 1, index2)}
+        </a>
+      );
+      startIndex = index4 + 1;
+    } else {
+      elements.push(<span>{desc.substring(startIndex, desc.length)}</span>);
+      startIndex = -1;
+    }
+  }
+  return elements;
+}
+
+export function getProductDescriptionSecure(desc: string) {
+  const elements: ReactElement[] = [];
+  const caseSensitive = true;
+  const searchStr1 = "[";
+  const searchStr2 = "]";
+  const searchStr3 = "(";
+  const searchStr4 = ")";
+  let startIndex = 0;
+  if (!caseSensitive) {
+    desc = desc.toLowerCase();
+  }
+
+  while (startIndex > -1) {
+    const index1 = desc.indexOf(searchStr1, startIndex);
+    const index2 = desc.indexOf(searchStr2, index1);
+    const index3 = desc.indexOf(searchStr3, index2);
+    const index4 = desc.indexOf(searchStr4, index3);
+    if (index1 > -1 && index2 > -1 && index3 > -1 && index4 > -1) {
+      elements.push(<span>{desc.substring(startIndex + 1, index1)}</span>);
+      if (
+        desc.substring(index3 + 1, index4).startsWith("http") ||
+        desc.substring(index3 + 1, index4).startsWith("https")
+      ) {
+        elements.push(
+          <a
+            className="text-blue-500"
+            href={desc.substring(index3 + 1, index4)}
+          >
+            {desc.substring(index1 + 1, index2)}
+          </a>
+        );
+      }
+      startIndex = index4 + 1;
+    } else {
+      elements.push(<span>{desc.substring(startIndex, desc.length)}</span>);
+      startIndex = -1;
+    }
+  }
+  return elements;
+}

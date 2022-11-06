@@ -5,7 +5,11 @@ import { trpc } from "../utils/trpc";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { getProductLink, Media } from "./utils/utils";
+import {
+  getProductDescriptionSecure,
+  getProductLink,
+  Media,
+} from "./utils/utils";
 interface Product {
   productId: string;
   name: string;
@@ -88,9 +92,9 @@ const Home: NextPage = () => {
 
   return (
     <div className="bg-white">
-      <header className="relative overflow-hidden">
+      <header className="relative">
         <div
-          className="relative z-20 bg-white bg-opacity-90 backdrop-blur-xl backdrop-filter"
+          className="relative z-50 bg-white bg-opacity-90 backdrop-blur-xl backdrop-filter"
           aria-label="Top"
         >
           <Navbar></Navbar>
@@ -247,13 +251,13 @@ const Home: NextPage = () => {
                 >
                   Our Favorites
                 </h2>
-                <a
+                {/* <a
                   href="#"
                   className="hidden text-sm font-semibold text-indigo-600 hover:text-indigo-500 sm:block"
                 >
                   Browse all favourites
                   <span aria-hidden="true"> &rarr;</span>
-                </a>
+                </a> */}
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-y-0 sm:gap-x-6 lg:gap-x-8">
@@ -327,7 +331,7 @@ const Home: NextPage = () => {
                             </a>
                           </h3>
                           <p className="mt-1 text-sm text-gray-500 overflow-hidden">
-                            {product.description}
+                            {getProductDescriptionSecure(product.description)}
                           </p>
                         </div>
                         <p className="text-sm font-medium text-gray-900">

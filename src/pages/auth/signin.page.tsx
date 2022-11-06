@@ -84,7 +84,11 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
       if (password === "") setInputPasswordError(true);
 
       if (!inputEmailError && !inputPasswordError && email && password) {
-        signIn("credentials", { email: email, password: password });
+        signIn("credentials", {
+          email: email,
+          password: password,
+          callbackUrl: "/",
+        });
       }
     } else {
       signIn(providerId);

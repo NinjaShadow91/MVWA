@@ -1,5 +1,6 @@
 import Footer from "../../../components/Footer";
 import Navbar from "../../../components/Navbar";
+import { getProductDescriptionSecure } from "../../utils/utils";
 
 const products = [
   {
@@ -89,7 +90,9 @@ export default function Example() {
                   <p className="mt-1 font-medium text-gray-900">
                     {product.price}
                   </p>
-                  <p className="mt-3 text-gray-500">{product.description}</p>
+                  <p className="mt-3 text-gray-500">
+                    {getProductDescriptionSecure(product.description)}
+                  </p>
                 </div>
                 <div className="sm:col-span-12 md:col-span-7">
                   <dl className="grid grid-cols-1 gap-y-8 border-b border-gray-200 py-8 sm:grid-cols-2 sm:gap-x-6 sm:py-6 md:py-10">
