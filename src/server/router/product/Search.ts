@@ -3,12 +3,12 @@ import { z } from "zod";
 import { throwPrismaTRPCError } from "../util";
 
 export const productSearchRouter = createRouter()
-  .query("searchProduct", {
+  .query("searchProductv1", {
     input: z.string(),
     async resolve({ ctx, input }) {
       try {
         return await ctx.prisma.$queryRawUnsafe(
-          `select name, price, description from "public"."Product" where position('${input}' in "public"."Product"."name")>0`
+          `select name, description from "public"."Product" where position('${input}' in "public"."Product"."name")>0`
         );
       } catch (err) {
         throw throwPrismaTRPCError({
@@ -18,7 +18,7 @@ export const productSearchRouter = createRouter()
       }
     },
   })
-  .query("searchProductv2", {
+  .query("searchProduct", {
     input: z.object({
       query: z.string(),
       filters: z
@@ -41,11 +41,11 @@ export const productSearchRouter = createRouter()
             where: {
               name: { in: query },
               deletedAt: null,
-              price: { gte: priceRangeMin, lte: priceRangeMax },
+              // price: { gte: priceRangeMin, lte: priceRangeMax },
             },
             select: {
               name: true,
-              price: true,
+              // price: true,
               //   Get only 1 pic
               Media: true,
               Details: {
@@ -59,7 +59,7 @@ export const productSearchRouter = createRouter()
             {
               where: {
                 deletedAt: null,
-                price: { gte: priceRangeMin, lte: priceRangeMax },
+                // price: { gte: priceRangeMin, lte: priceRangeMax },
                 Details: {
                   some: {
                     description: {
@@ -70,7 +70,7 @@ export const productSearchRouter = createRouter()
               },
               select: {
                 name: true,
-                price: true,
+                // price: true,
                 //   Get only 1 pic
                 Media: {
                   take: 1,
@@ -87,6 +87,7 @@ export const productSearchRouter = createRouter()
         } else {
           // Implement pagination
           // Process query and make token remove verb, number maybe
+          console.log("query", input.query);
           const query = [input.query];
           const prodsWithQueryInName = await ctx.prisma.product.findMany({
             where: {
@@ -94,8 +95,9 @@ export const productSearchRouter = createRouter()
               name: { in: query },
             },
             select: {
+              productId: true,
               name: true,
-              price: true,
+              // price: true,
               description: true,
               // Details: {
               //   select: {
@@ -109,17 +111,27 @@ export const productSearchRouter = createRouter()
             {
               where: {
                 deletedAt: null,
-                Details: {
-                  some: {
-                    description: {
-                      search: input.query,
+                OR: [
+                  {
+                    Details: {
+                      some: {
+                        description: {
+                          search: input.query,
+                        },
+                      },
                     },
                   },
-                },
+                  {
+                    description: {
+                      contains: input.query,
+                    },
+                  },
+                ],
               },
               select: {
+                productId: true,
                 name: true,
-                price: true,
+                // price: true,
                 description: true,
                 // Details: {
                 //   select: {

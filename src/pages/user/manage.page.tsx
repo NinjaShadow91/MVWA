@@ -1,11 +1,66 @@
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { trpc } from "../../utils/trpc";
 
 function classNames(...classes: any) {
   return classes.filter(Boolean).join(" ");
 }
 
 export default function UserManage() {
+  const user = useSession();
+  const [status, setStatus] = useState(1);
+  // const [status, setStatus] = useState(0);
+  const [profile, setProfile] = useState<any | null>(null);
+  const [addresses, setAddresses] = useState<any | null>(null);
+  const [notificationProfile, setNotificationProfile] = useState<any | null>(
+    null
+  );
+
+  trpc.useQuery(
+    ["user.profile.getUserProfile", { userId: user.data?.user?.id }],
+    {
+      enabled: !!user.data?.user?.id,
+      onSuccess: (data) => {
+        setProfile(data);
+        setStatus(status + 1);
+      },
+      onError: (error) => {
+        setStatus(-10);
+        console.log(error);
+      },
+    }
+  );
+
+  trpc.useQuery(["user.address.getUserAddresses"], {
+    enabled: !!user.data?.user?.id,
+    onSuccess: (data) => {
+      setAddresses(data);
+      setStatus(status + 1);
+    },
+    onError: (error) => {
+      setStatus(-10);
+      console.log(error);
+    },
+  });
+
+  trpc.useQuery(["user.notification.getNotificationProfile"], {
+    enabled: !!user.data?.user?.id,
+    onSuccess: (data) => {
+      setNotificationProfile(data);
+      setStatus(status + 1);
+    },
+    onError: (error) => {
+      setStatus(-10);
+      console.log(error);
+    },
+  });
+
+  if (status !== 3) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="flex flex-col min-h-screen justify-around overflow-hidden">
       <Navbar></Navbar>
@@ -37,6 +92,7 @@ export default function UserManage() {
                         type="text"
                         name="username"
                         id="username"
+                        defaultValue={profile.name}
                         autoComplete="username"
                         className="block w-full min-w-0 flex-grow rounded-none rounded-r-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       />
@@ -57,7 +113,7 @@ export default function UserManage() {
                         rows={3}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         placeholder="About you"
-                        defaultValue={""}
+                        defaultValue={profile.bio}
                       />
                     </div>
                     <p className="mt-2 text-sm text-gray-500">
@@ -92,6 +148,7 @@ export default function UserManage() {
               <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                 <button
                   type="submit"
+                  onClick={() => updateProfile()}
                   className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   Save
@@ -233,6 +290,7 @@ export default function UserManage() {
               </div>
               <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                 <button
+                  onClick={() => updateAddress()}
                   type="submit"
                   className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
@@ -406,6 +464,7 @@ export default function UserManage() {
               <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                 <button
                   type="submit"
+                  onClick={() => updateNotification()}
                   className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
                 >
                   Save

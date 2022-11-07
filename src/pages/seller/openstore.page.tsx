@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 
 const OpenStore: NextPage = () => {
   const router = useRouter();
-  const trpcCreateStore = trpc.useMutation(["store.seller.createStore"]);
+  const trpcCreateStore = trpc.useMutation(["seller.createStore"]);
   const storeName = useRef("");
   const storeDescription = useRef("");
   const storeAddress = useRef({

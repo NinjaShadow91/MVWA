@@ -58,6 +58,37 @@ export const sellerRouter = createProtectedRouter()
       }
     },
   })
+  .query("getAllStoresBySeller", {
+    input: z.object({}).nullish(),
+    resolve: async ({ input, ctx }) => {
+      try {
+        const stores = await ctx.prisma.store.findMany({
+          where: {
+            userId: ctx.session.user.id,
+          },
+          select: {
+            storeId: true,
+            name: true,
+            description: true,
+            Media: true,
+            Contacts: {
+              include: {
+                ContactType: true,
+              },
+            },
+            Tags: true,
+            deletedAt: true,
+          },
+        });
+        return stores.filter((store) => !store.deletedAt);
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          cause: err,
+          message: "Error getting all stores",
+        });
+      }
+    },
+  })
   .mutation("addProduct", {
     input: z.object({
       storeId: z.string().uuid(),

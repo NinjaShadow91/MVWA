@@ -221,7 +221,7 @@ export default function ProductDescription() {
           console.log(data);
         },
         onError: (error) => {
-          alert("Cant place order, please tryr again..");
+          alert("Cant place order, please try again..");
           console.log(error);
         },
       }
@@ -239,7 +239,7 @@ export default function ProductDescription() {
           console.log(data);
         },
         onError: (error) => {
-          alert("Cant add to cart, please tryr again..");
+          alert("Cant add to cart, please try again..");
           console.log(error);
         },
       }
@@ -252,7 +252,7 @@ export default function ProductDescription() {
         console.log(data);
       },
       onError: (error) => {
-        alert("Cant save for latter, please tryr again..");
+        alert("Cant save for latter, please try again..");
         console.log(error);
       },
     });

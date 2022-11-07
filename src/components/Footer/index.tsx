@@ -20,6 +20,10 @@ const footerNavigation = {
     { name: "Instagram", href: "#" },
     { name: "Pinterest", href: "#" },
   ],
+  seller: [
+    { name: "Sell on MVWA", href: "http://localhost:3000/seller/" },
+    { name: "Affiliates", href: "#" },
+  ],
 };
 
 export default function Footer() {
@@ -47,8 +51,8 @@ export default function Footer() {
         Footer
       </h2>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="py-20 xl:grid xl:grid-cols-3 xl:gap-8">
-          <div className="grid grid-cols-2 gap-8 xl:col-span-2">
+        <div className="py-20 xl:grid xl:grid-cols-4 xl:gap-8">
+          <div className="grid grid-cols-3 gap-8 xl:col-span-2">
             <div className="space-y-16 md:grid md:grid-cols-2 md:gap-8 md:space-y-0">
               <div>
                 <h3 className="text-sm font-medium text-gray-900">Company</h3>
@@ -86,6 +90,25 @@ export default function Footer() {
                 <h3 className="text-sm font-medium text-gray-900">Connect</h3>
                 <ul role="list" className="mt-6 space-y-6">
                   {footerNavigation.connect.map((item) => (
+                    <li key={item.name} className="text-sm">
+                      <a
+                        href={item.href}
+                        className="text-gray-500 hover:text-gray-600"
+                      >
+                        {item.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="space-y-16 md:grid md:grid-cols-2 md:gap-8 md:space-y-0">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900">
+                  Sell With Us
+                </h3>
+                <ul role="list" className="mt-6 space-y-6">
+                  {footerNavigation.seller.map((item) => (
                     <li key={item.name} className="text-sm">
                       <a
                         href={item.href}

@@ -43,8 +43,7 @@ export function authOptions({
         ) {
           if (user) {
             const sessionToken = randomUUID();
-            const sessionExpiry = new Date(Date.now() + 15 * 1000);
-
+            const sessionExpiry = new Date(new Date().getTime() + 15 * 60000);
             await adapter.createSession({
               sessionToken: sessionToken,
               userId: user.id,

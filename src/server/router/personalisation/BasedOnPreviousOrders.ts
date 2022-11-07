@@ -15,7 +15,7 @@ export const ProductRecommendationBasedOnPreviousOrders =
             description: true,
             Media: { select: { mediaId: true } },
           },
-          take: 10,
+          take: 4,
         });
 
         if (res === null || res.length === 0) {

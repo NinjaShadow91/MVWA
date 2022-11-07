@@ -762,187 +762,761 @@ export async function insertData() {
               storeId: true,
             },
           });
-
-          const inputP = {
-            storeId: store.storeId,
-            product: {
-              name: "product1",
-              price: 1000,
-              stock: 100,
-              description: "This is product description",
-              images: [],
-              giftOptionAvailable: true,
-              paymentMethods: [],
-              replaceFrame: 7,
-              returnFrame: 0,
-              tags: undefined,
-              brand: undefined,
-              category: undefined,
-              // variants: z.string().uuid().array().nullish(),
-              technicalDetails: [
-                {
-                  key: "Rated Power",
-                  value: "220",
-                },
-                {
-                  key: "Warranty time period",
-                  value: "2 Years",
-                },
-              ],
-
-              details: [
-                {
-                  heading: "Big Screen",
-                  description: "48 inch screen",
-                  descriptionImages: [],
-                },
-                {
-                  heading: "Powerful Processor",
-                  description: "24 cores processor",
-                  descriptionImages: [],
-                },
-                {
-                  heading: "Powerful Sound",
-                  description: "Bass Boosted Sound",
-                  descriptionImages: [],
-                },
-              ],
-            },
-          };
-          // transaction
-          // Dont create new technical details if they already exist
-          const product = await prisma.product.create({
-            data: {
-              name: inputP.product.name,
-              description: inputP.product.description,
-              Media: {
-                create: inputP.product.images?.map((image) => ({
-                  mediaId: image,
-                })),
-              },
-              Category: inputP.product.category
-                ? {
-                    connect: {
-                      categoryId: inputP.product.category,
-                    },
-                  }
-                : undefined,
-              giftOptionAvailable: inputP.product.giftOptionAvailable,
-              Details: {
-                create: inputP.product.details.map((detail) => ({
-                  heading: detail.heading,
-                  description: detail.description,
-                  Media: { create: detail.descriptionImages },
-                })),
-              },
-              TechnicalDetails: {
-                create: inputP.product.technicalDetails.map((detail) => ({
-                  key: detail.key,
-                  value: detail.value,
-                })),
-              },
-              // Tags: {
-              //   connectOrCreate: inputP.product.tags?.map((tag) => ({
-              //     where: {
-              //       name: tag.key,
-              //     },
-              //     create: {
-              //       name: tag.key,
-              //       value: tag.value,
-              //     },
-              //   })),
-              // },
-              replaceFrame: inputP.product.replaceFrame,
-              returnFrame: inputP.product.returnFrame,
-              brandId: inputP.product.brand ?? undefined,
-              originalStoreId: inputP.storeId,
-            },
-          });
-
-          const overallWrongInfo =
-            await prisma.productWrongInformationReportsCombinedResult.create({
+          const insertProduct = async (inputP: any) => {
+            // transaction
+            // Dont create new technical details if they already exist
+            const product = await prisma.product.create({
               data: {
-                productId: product.productId,
-                count: 0,
-              },
-              select: {
-                productWrongInformationReportsOverallId: true,
+                name: inputP.product.name,
+                description: inputP.product.description,
+                Media: {
+                  create: inputP.product.images?.map((image) => ({
+                    mediaId: image,
+                  })),
+                },
+                Category: inputP.product.category
+                  ? {
+                      connect: {
+                        categoryId: inputP.product.category,
+                      },
+                    }
+                  : undefined,
+                giftOptionAvailable: inputP.product.giftOptionAvailable,
+                Details: {
+                  create: inputP.product.details.map((detail) => ({
+                    heading: detail.heading,
+                    description: detail.description,
+                    Media: { create: detail.descriptionImages },
+                  })),
+                },
+                TechnicalDetails: {
+                  create: inputP.product.technicalDetails.map((detail) => ({
+                    key: detail.key,
+                    value: detail.value,
+                  })),
+                },
+                // Tags: {
+                //   connectOrCreate: inputP.product.tags?.map((tag) => ({
+                //     where: {
+                //       name: tag.key,
+                //     },
+                //     create: {
+                //       name: tag.key,
+                //       value: tag.value,
+                //     },
+                //   })),
+                // },
+                replaceFrame: inputP.product.replaceFrame,
+                returnFrame: inputP.product.returnFrame,
+                brandId: inputP.product.brand ?? undefined,
+                originalStoreId: inputP.storeId,
               },
             });
 
-          const productOverallRating =
-            await prisma.productReviewsCombinedResult.create({
-              data: {
-                productId: product.productId,
-                reviewsCount: 0,
-                rating: 0,
-              },
-              select: {
-                productReviewsCombinedResultId: true,
-              },
-            });
-
-          const prodSKU = await prisma.productSKU.create({
-            data: {
-              productInventoryIds: [],
-              skuName: product.name,
-              price: inputP.product.price,
-              originalStoreId: inputP.storeId,
-              stock: inputP.product.stock,
-              Product: {
-                connect: {
+            const overallWrongInfo =
+              await prisma.productWrongInformationReportsCombinedResult.create({
+                data: {
                   productId: product.productId,
+                  count: 0,
+                },
+                select: {
+                  productWrongInformationReportsOverallId: true,
+                },
+              });
+
+            const productOverallRating =
+              await prisma.productReviewsCombinedResult.create({
+                data: {
+                  productId: product.productId,
+                  reviewsCount: 0,
+                  rating: 0,
+                },
+                select: {
+                  productReviewsCombinedResultId: true,
+                },
+              });
+
+            const prodSKU = await prisma.productSKU.create({
+              data: {
+                productInventoryIds: [],
+                skuName: product.name,
+                price: inputP.product.price,
+                originalStoreId: inputP.storeId,
+                stock: inputP.product.stock,
+                Product: {
+                  connect: {
+                    productId: product.productId,
+                  },
                 },
               },
-            },
-          });
+            });
 
-          const productInventory = await prisma.productInventory.create({
-            data: {
-              stock: inputP.product.stock,
-              storeId: inputP.storeId,
-              price: inputP.product.price,
-              productId: prodSKU.productSKUId,
-              PaymentMethods: {
-                connect: inputP.product.paymentMethods.map((method) => ({
-                  paymentMethodId: method,
-                })),
+            const productInventory = await prisma.productInventory.create({
+              data: {
+                stock: inputP.product.stock,
+                storeId: inputP.storeId,
+                price: inputP.product.price,
+                productId: prodSKU.productSKUId,
+                PaymentMethods: {
+                  connect: inputP.product.paymentMethods.map((method) => ({
+                    paymentMethodId: method,
+                  })),
+                },
+                sold: 0,
+                comingSoon: 0,
               },
-              sold: 0,
-              comingSoon: 0,
-            },
-          });
+            });
 
-          await prisma.productSKU.update({
-            where: {
-              productSKUId: prodSKU.productSKUId,
-            },
-            data: {
-              productInventoryIds: [productInventory.productInventoryId],
-            },
-          });
+            await prisma.productSKU.update({
+              where: {
+                productSKUId: prodSKU.productSKUId,
+              },
+              data: {
+                productInventoryIds: [productInventory.productInventoryId],
+              },
+            });
 
-          await prisma.store.update({
-            where: {
+            // const { Products } =
+            //   (await prisma.store.findUnique({
+            //     where: {
+            //       storeId: inputP.storeId,
+            //     },
+            //     select: {
+            //       Products: true,
+            //     },
+            //   })) ?? [];
+
+            await prisma.store.update({
+              where: {
+                storeId: store.storeId,
+              },
+              data: {
+                Products: {
+                  push: product.productId,
+                },
+              },
+            });
+
+            const productF = await prisma.product.update({
+              where: {
+                productId: product.productId,
+              },
+              data: {
+                ProductReviewsCombinedResult:
+                  productOverallRating.productReviewsCombinedResultId,
+                OverallWrongInformationResult:
+                  overallWrongInfo.productWrongInformationReportsOverallId,
+              },
+            });
+            return productF;
+          };
+
+          const inputP = [
+            {
               storeId: store.storeId,
-            },
-            data: {
-              Products: [product.productId],
-            },
-          });
+              product: {
+                name: "product1",
+                price: 1000,
+                stock: 100,
+                description: "This is product description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
 
-          const productF = await prisma.product.update({
-            where: {
-              productId: product.productId,
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
             },
-            data: {
-              ProductReviewsCombinedResult:
-                productOverallRating.productReviewsCombinedResultId,
-              OverallWrongInformationResult:
-                overallWrongInfo.productWrongInformationReportsOverallId,
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product2",
+                price: 1000,
+                stock: 100,
+                description: "This is product 2 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
             },
-          });
-          return productF;
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product3",
+                price: 1000,
+                stock: 100,
+                description: "This is product 3 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product4",
+                price: 1000,
+                stock: 100,
+                description: "This is product 4 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product5",
+                price: 1000,
+                stock: 100,
+                description: "This is product 5 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product6",
+                price: 1000,
+                stock: 100,
+                description: "This is product 6 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product7",
+                price: 1000,
+                stock: 100,
+                description: "This is product 7 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product8",
+                price: 1000,
+                stock: 100,
+                description: "This is product 8 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product9",
+                price: 1000,
+                stock: 100,
+                description: "This is product 9 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product10",
+                price: 1000,
+                stock: 100,
+                description: "This is product 10 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product11",
+                price: 1000,
+                stock: 100,
+                description: "This is product 11 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product8",
+                price: 1000,
+                stock: 100,
+                description: "This is product 8 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product13",
+                price: 1000,
+                stock: 100,
+                description: "This is product 13 description",
+                images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: [],
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: [],
+                  },
+                ],
+              },
+            },
+          ];
+
+          Promise.all(inputP.map((inputPp) => insertProduct(inputPp))).catch(
+            (err) => {
+              console.log(err);
+            }
+          );
         } catch (err) {
           throw throwPrismaTRPCError({
             cause: err,

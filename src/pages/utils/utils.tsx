@@ -58,8 +58,28 @@ export const Media = ({ media }: { media: string }) => {
   );
 };
 
-export const getProductLink = (productId: string) => {
-  return `http://localhost:3000/product/${productId}`;
+export const getProductLink = (identifier: string) => {
+  return `http://localhost:3000/product/${identifier}`;
+};
+
+export const getProductEditLink = (identifier: string) => {
+  return `http://localhost:3000/seller/editproduct?id=${identifier}`;
+};
+
+export const getStoreEditLink = (identifier: string) => {
+  return `http://localhost:3000/seller/editstore?id=${identifier}`;
+};
+
+export const getStoreLink = (identifier: string) => {
+  return `http://localhost:3000/seller/store?storeId=${identifier}`;
+};
+
+export const getAddProductLink = (identifier: string) => {
+  return `http://localhost:3000/seller/addproduct?id=${identifier}`;
+};
+
+export const getOpenStoreLink = () => {
+  return `http://localhost:3000/seller/openstore`;
 };
 
 export const getOrderLink = (orderId: string) => {

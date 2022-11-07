@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 
 const AddProduct: NextPage = () => {
   const router = useRouter();
-  const trpcAddProduct = trpc.useMutation(["store.seller.addProduct"]);
+  const trpcAddProduct = trpc.useMutation(["seller.addProduct"]);
   const [status, setStatus] = useState("loading");
   const [storeId, setStoreId] = useState(router.query.storeId as string);
 

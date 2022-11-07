@@ -33,7 +33,7 @@ export const FavouriteProductsRouter = createRouter().query("get", {
             description: true,
             Media: { select: { mediaId: true } },
           },
-          take: 10,
+          take: 6,
         });
       }
     } catch (err) {

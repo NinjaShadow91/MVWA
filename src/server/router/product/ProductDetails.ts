@@ -94,37 +94,62 @@ export const productRouter = createRouter()
       }
     },
   })
-  .query("getProductSKUsDetails", {
+  .query("getProductSKUDetails", {
     input: z.object({
-      productSKUIds: z.string().uuid().array(),
+      productSKUId: z.string().uuid(),
     }),
     resolve: async ({ input, ctx }) => {
       try {
-        const productSKUs = [];
-        for (let i = 0; i < input.productSKUIds.length; i++) {
-          const productSKU = await ctx.prisma.productSKU.findUnique({
-            where: { productSKUId: input.productSKUIds[i] },
-            select: {
-              productSKUId: true,
-              skuName: true,
-              description: true,
-              price: true,
-              stock: true,
-              comingSoon: true,
-              Product: true,
-              ProductInventory: true,
-              Media: true,
-            },
+        const productSKU = await ctx.prisma.productSKU.findUnique({
+          where: { productSKUId: input.productSKUId },
+          select: {
+            productSKUId: true,
+            skuName: true,
+            productInventoryIds: true,
+            Media: true,
+            deletedAt: true,
+          },
+        });
+        if (productSKU === null || productSKU.deletedAt !== null) {
+          throw throwTRPCError({
+            message: "Product SKU not found",
+            code: "NOT_FOUND",
           });
-          if (productSKU === null) {
-            throw throwTRPCError({
-              message: "Product SKU not found",
-              code: "NOT_FOUND",
-            });
-          }
-          productSKUs.push(productSKU);
         }
-        return productSKUs;
+        return productSKU;
+      } catch (err) {
+        throw throwTRPCError({
+          cause: err,
+          message: "Something went bad while fetching the product SKU data",
+        });
+      }
+    },
+  })
+  .query("getProductSKUsDetails", {
+    input: z.string().uuid(),
+
+    resolve: async ({ input, ctx }) => {
+      try {
+        const productSKUs = await ctx.prisma.productSKU.findMany({
+          where: { productId: input },
+          select: {
+            productSKUId: true,
+            skuName: true,
+            productInventoryIds: true,
+            Media: true,
+            deletedAt: true,
+          },
+        });
+
+        if (productSKUs.length === 0) {
+          throw throwTRPCError({
+            message: "Product SKUs not found",
+            code: "NOT_FOUND",
+          });
+        }
+        return productSKUs.filter(
+          (productSKU) => productSKU.deletedAt === null
+        );
       } catch (err) {
         throw throwTRPCError({
           cause: err,

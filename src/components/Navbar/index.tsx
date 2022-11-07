@@ -1,8 +1,9 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 
 // const navigation = [
 //   { name: "Dashboard", href: "#", current: true },
@@ -15,7 +16,13 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function Navbar(navigation: any) {
+export default function Navbar({
+  navigation,
+  searchQueryP,
+}: {
+  navigation: any;
+  searchQueryP: string | undefined;
+}) {
   const user = useSession();
   const userNavigation = [
     {
@@ -27,6 +34,8 @@ export default function Navbar(navigation: any) {
       href: "http://localhost:3000/auth/signout",
     },
   ];
+  const [searchQuery, setSearchQuery] = useState(searchQueryP ?? "");
+  const router = useRouter();
   return (
     <Disclosure as="header" className="bg-white shadow">
       {({ open }) => (
@@ -48,15 +57,31 @@ export default function Navbar(navigation: any) {
                     Search
                   </label>
                   <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 hover:cursor-pointer">
                       <MagnifyingGlassIcon
                         className="h-5 w-5 text-gray-400"
                         aria-hidden="true"
+                        onClick={() => {
+                          if (searchQuery) {
+                            router.push(`/search?searchQuery=${searchQuery}`);
+                          }
+                        }}
                       />
                     </div>
                     <input
                       id="search"
                       name="search"
+                      defaultValue={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          if (searchQuery) {
+                            router.push(`/search?searchQuery=${searchQuery}`);
+                          }
+                        }
+                      }}
                       className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-indigo-500 focus:text-gray-900 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       placeholder="Search"
                       type="search"

@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 
 const EditStore: NextPage = () => {
   const router = useRouter();
-  const trpcEditStore = trpc.useMutation(["store.seller.updateStore"]);
+  const trpcEditStore = trpc.useMutation(["seller.updateStore"]);
   const storeName = useRef("");
   const storeDescription = useRef("");
   const storeAddress = useRef({
@@ -27,7 +27,7 @@ const EditStore: NextPage = () => {
     }
   }, [router]);
 
-  trpc.useQuery(["store.seller.getStoreDetails", storeId], {
+  trpc.useQuery(["seller.getStoreDetails", storeId], {
     enabled: !!storeId,
     onSuccess: (store) => {
       storeName.current = store.name;
@@ -104,7 +104,7 @@ const EditStore: NextPage = () => {
       <>
         <Navbar></Navbar>
         <main className="mr-20 ml-20 mb-10 p-10">
-          <h2 className="text-3xl font-bold  text-center">Open Store</h2>
+          <h2 className="text-3xl font-bold  text-center">Edit Store</h2>
           <form
             className="space-y-8 divide-y divide-gray-200"
             autoComplete="off"

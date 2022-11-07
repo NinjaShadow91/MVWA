@@ -23,6 +23,7 @@ import { CartRouter } from "./cart/Cart";
 import { SaveForLatter } from "./cart/SaveForLatter";
 import { WishlistRouter } from "./cart/WishList";
 import { NewsletterRouter } from "./newspaper/Subsribe";
+import { UserNotificationRouter } from "./user/UserNotification";
 import { insertData } from "../db/test";
 
 export const appRouter = createRouter()
@@ -31,7 +32,8 @@ export const appRouter = createRouter()
   .merge("user.profile.", userProfileRouter)
   .merge("user.address.", userAddressRouter)
   .merge("user.contact.", userContactRouter)
-  .merge("store.seller.", sellerRouter)
+  .merge("user.notification.", UserNotificationRouter)
+  .merge("seller.", sellerRouter)
   .merge("store.", storeRouter)
   .merge("product.review.", productReviewRouter)
   .merge("store.review.", storeReviewRouter)
