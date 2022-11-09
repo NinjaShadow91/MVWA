@@ -8,8 +8,33 @@ import { ZodError } from "zod";
 import { env } from "../../../env/server.mjs";
 import { appRouter } from "../../../server/router";
 import { createContext } from "../../../server/router/context";
+import NextCors from "nextjs-cors";
+import type { NextApiHandler, NextApiRequest, NextApiResponse } from "next";
+import Cors from "cors";
 
-// export API handler
+const cors = Cors();
+
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: any) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+
+      return resolve(result);
+    });
+  });
+}
+
+export function withCors(handler: NextApiHandler) {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    await runMiddleware(req, res, cors);
+
+    return await handler(req, res);
+  };
+}
+
+// export default withCors(
 export default createNextApiHandler({
   router: appRouter,
   createContext,
@@ -18,21 +43,6 @@ export default createNextApiHandler({
       console.error(`❌ tRPC failed on ${path}: ${error}`);
     }
     console.log(error.cause);
-
-    // if (error.cause instanceof PrismaClientInitializationError) {
-    //   error = {
-    //     code: "INTERNAL_SERVER_ERROR",
-    //     name: "ERROR",
-    //     message: "Something went wrong while creating your hui hui",
-    //   };
-    // }
-    // if (
-    //   error.code === "INTERNAL_SERVER_ERROR" ||
-    //   (error.code === "BAD_REQUEST" && error.cause instanceof ZodError)
-    // ) {
-    //   // console.error(error);
-    //   // error.message = "Something went wrong";
-    //   // return { message: "Something went wrong" };
-    // } else return error;
   },
 });
+// );

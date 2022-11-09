@@ -140,7 +140,7 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
                     className="block w-full appearance-none text-red-700 text-center"
                   >
                     <div>{errorMessage}</div>
-                    <a href={errorMessage}>Click me!</a>
+                    {/* <a href={errorMessage}>Click me!</a> */}
                     {/* {
                       <div
                         dangerouslySetInnerHTML={{

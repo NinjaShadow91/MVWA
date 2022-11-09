@@ -5,6 +5,7 @@ import { trpc } from "../../utils/trpc";
 import {
   getAddProductLink,
   getProductEditLink,
+  getProductLink,
   getStoreEditLink,
   Media,
 } from "../utils/utils";
@@ -138,7 +139,8 @@ const StorePage: NextPage = () => {
                 products.map((product) => (
                   <a
                     key={product.productId}
-                    href={getProductEditLink(product.productId)}
+                    // href={getProductEditLink(product.productId)}
+                    href={getProductLink(product.productId)}
                     className="group text-sm"
                   >
                     <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">

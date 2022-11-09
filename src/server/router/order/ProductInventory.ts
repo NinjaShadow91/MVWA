@@ -155,4 +155,32 @@ export const productInventoryRouter = createRouter()
       }
     },
   })
+  .query("getInventories", {
+    input: z.object({
+      productInventoryIds: z.string().uuid().array(),
+    }),
+    resolve: async ({ input, ctx }) => {
+      try {
+        const productInventories = await ctx.prisma.productInventory.findMany({
+          where: { productInventoryId: { in: input.productInventoryIds } },
+          select: {
+            productInventoryId: true,
+            price: true,
+            stock: true,
+            productId: true,
+            storeId: true,
+            comingSoon: true,
+            deletedAt: true,
+          },
+        });
+        return productInventories.filter((inventory) => !inventory.deletedAt);
+      } catch (err) {
+        throw throwTRPCError({
+          cause: err,
+          message:
+            "Something went bad while fetching the product inventory data",
+        });
+      }
+    },
+  })
   .merge("seller.", sellerProductInventoryRouter);

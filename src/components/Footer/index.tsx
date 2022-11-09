@@ -11,8 +11,8 @@ const footerNavigation = {
     { name: "Privacy", href: "#" },
   ],
   account: [
-    { name: "Manage Account", href: "http://localhost:3000/user/manage" },
-    { name: "Orders", href: "http://localhost:3000/user/order/all" },
+    { name: "Manage Account", href: `/user/manage` },
+    { name: "Orders", href: "/user/order/all" },
   ],
   connect: [
     { name: "Contact Us", href: "#" },
@@ -21,7 +21,7 @@ const footerNavigation = {
     { name: "Pinterest", href: "#" },
   ],
   seller: [
-    { name: "Sell on MVWA", href: "http://localhost:3000/seller/" },
+    { name: "Sell on MVWA", href: "/seller/" },
     { name: "Affiliates", href: "#" },
   ],
 };

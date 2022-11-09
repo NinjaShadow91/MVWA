@@ -27,6 +27,7 @@ export default function UserOrders() {
     useState<any | null>([]);
   trpc.useQuery(["order.getOrders", {}], {
     onSuccess: (data) => {
+      // console.log(data);
       setOrderItems(data?.OrderItems.map((item) => item.productId));
       setOrders(data);
     },
@@ -35,11 +36,13 @@ export default function UserOrders() {
     },
   });
 
-  trpc.useQuery(["product.getProductsDetails", { productIds: orderItems }], {
+  trpc.useQuery(["product.getSKUsDetails", { productSKUIds: orderItems }], {
     enabled: !!orderItems,
     onSuccess: (data) => {
+      console.log(data, "sku");
       setProducts(data);
       setStatus("success");
+      setReload(!reload);
     },
     onError: (err) => {
       console.log(err);
@@ -53,24 +56,19 @@ export default function UserOrders() {
 
   function productMediaPresent(productId: string) {
     return (
-      products?.filter((product) => product.productId === productId)[0]?.Media
-        ?.length != 0
+      products?.filter((product) => product.productSKUId === productId)[0]
+        ?.Media?.length != 0
     );
   }
 
   function getProductMediaId(productId: string, i: number) {
-    return products?.filter((product) => product.productId === productId)[0]
+    return products?.filter((product) => product.productSKUId === productId)[0]
       ?.Media[i]?.mediaId;
   }
 
   function getProductName(productId: string) {
-    return products?.filter((product) => product.productId === productId)[0]
-      ?.name;
-  }
-
-  function getProductDescription(productId: string) {
-    return products?.filter((product) => product.productId === productId)[0]
-      ?.description;
+    return products?.filter((product) => product.productSKUId === productId)[0]
+      ?.skuName;
   }
 
   if (status === "loading") {
@@ -118,12 +116,6 @@ export default function UserOrders() {
                             <h3 className="text-sm">
                               Name:{getProductName(product.productId)}
                             </h3>
-                          </div>
-                          <div className="mt-1 flex text-sm">
-                            <p className="text-gray-500">
-                              Description:
-                              {getProductDescription(product.productId)}
-                            </p>
                           </div>
                           <p className="mt-1 text-sm font-medium text-gray-900">
                             Price: {product.amount}

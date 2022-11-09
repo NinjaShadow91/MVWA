@@ -12,13 +12,13 @@ export const providersOfNextAuth: Provider[] = [
     clientId: env.GOOGLE_CLIENT_ID,
     clientSecret: env.GOOGLE_CLIENT_SECRET,
   }),
-  GithubProvider({
-    clientId: env.GITHUB_CLIENT_ID,
-    clientSecret: env.GITHUB_CLIENT_SECRET,
-  }),
   DiscordProvider({
     clientId: env.DISCORD_CLIENT_ID,
     clientSecret: env.DISCORD_CLIENT_SECRET,
+  }),
+  GithubProvider({
+    clientId: env.GITHUB_CLIENT_ID,
+    clientSecret: env.GITHUB_CLIENT_SECRET,
   }),
   CredentialsProvider({
     name: "credentials",
@@ -32,6 +32,61 @@ export const providersOfNextAuth: Provider[] = [
     },
     authorize: async (credentials, req) => {
       if (credentials !== null && credentials !== undefined) {
+        try {
+          const auth = await prisma.userAuthentication.findUnique({
+            where: { email: credentials.email },
+            select: {
+              CurrentPassword: true,
+              deletedAt: true,
+              email: true,
+              userId: true,
+              name: true,
+              imageId: true,
+            },
+          });
+          if (
+            auth &&
+            auth.CurrentPassword.numIterations &&
+            auth.CurrentPassword.salt &&
+            auth.CurrentPassword.hashingAlgorithm == "sha512" &&
+            !auth.deletedAt
+          ) {
+            const derivedKey = pbkdf2Sync(
+              credentials.password,
+              auth.CurrentPassword.salt,
+              auth.CurrentPassword.numIterations,
+              64,
+              auth.CurrentPassword.hashingAlgorithm
+            );
+
+            prisma.userAuthentication.update({
+              where: { email: credentials.email },
+              data: {
+                LoginAttempts: {
+                  create: {
+                    // Add logic to get ip address and user agent
+                    ipAddress: "xxxxxx",
+                    userAgent: "xxxxxx",
+                    success:
+                      derivedKey.toString("hex") ==
+                      auth.CurrentPassword.passwordId,
+                  },
+                },
+              },
+            });
+            if (auth.CurrentPassword.password === derivedKey.toString("hex")) {
+              return {
+                id: auth.userId,
+                name: auth.name,
+                email: auth.email,
+                image: auth.imageId,
+              };
+            }
+          }
+        } catch (err) {
+          // Do error handling, log ,etc.
+          return null;
+        }
         // try {
         //   const auth = await prisma.userAuthentication.findUnique({
         //     where: { email: credentials.email },
@@ -65,62 +120,6 @@ export const providersOfNextAuth: Provider[] = [
         //   console.log("err: ", err);
         //   return null;
         // }
-        try {
-          const auth = await prisma.userAuthentication.findUnique({
-            where: { email: credentials.email },
-            select: {
-              CurrentPassword: true,
-              deletedAt: true,
-              email: true,
-              userId: true,
-              name: true,
-              imageId: true,
-            },
-          });
-          if (
-            auth &&
-            auth.CurrentPassword.numIterations &&
-            auth.CurrentPassword.salt &&
-            auth.CurrentPassword.hashingAlgorithm == "sha512" &&
-            !auth.deletedAt
-          ) {
-            const derivedKey = pbkdf2Sync(
-              credentials.password,
-              auth.CurrentPassword.salt,
-              auth.CurrentPassword.numIterations,
-              64,
-              auth.CurrentPassword.hashingAlgorithm
-            );
-            // console.log(auth.CurrentPassword.passwordId);
-            // console.log(user, credentials.password, derivedKey.toString("hex"));
-            prisma.userAuthentication.update({
-              where: { email: credentials.email },
-              data: {
-                LoginAttempts: {
-                  create: {
-                    // Add logic to get ip address and user agent
-                    ipAddress: "xxxxxx",
-                    userAgent: "xxxxxx",
-                    success:
-                      derivedKey.toString("hex") ==
-                      auth.CurrentPassword.passwordId,
-                  },
-                },
-              },
-            });
-            if (auth.CurrentPassword.password === derivedKey.toString("hex")) {
-              return {
-                id: auth.userId,
-                name: auth.name,
-                email: auth.email,
-                image: auth.imageId,
-              };
-            }
-          }
-        } catch (err) {
-          // Do error handling, log ,etc.
-          return null;
-        }
       }
       return null;
     },

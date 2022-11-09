@@ -22,7 +22,6 @@ export default defineNextConfig({
     defaultLocale: "en",
   },
   images: {
-    // domains: ["tailwindui.com"],
     domains: ["localhost"],
   },
 });

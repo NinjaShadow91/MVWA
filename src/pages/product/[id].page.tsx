@@ -232,6 +232,7 @@ export default function ProductDescription() {
     trpcAddToCart.mutate(
       {
         productId: product.ProductSKU[0].productSKUId,
+        // productInventoryId: product.ProductSKU[0].productInventoryIds[0],
         quantity: quantity,
       },
       {
@@ -322,7 +323,7 @@ export default function ProductDescription() {
                   </p>
                 </div>
 
-                {product.stock ? (
+                {productInventories && productInventories[0].stock !== 0 ? (
                   <div className="mt-6 flex items-center">
                     <CheckIcon
                       className="h-5 w-5 flex-shrink-0 text-green-500"
@@ -414,14 +415,20 @@ export default function ProductDescription() {
                     <p className="mt-3 max-w-3xl text-lg text-gray-600">
                       {detail.description}
                     </p>
-                    {detail.Media &&
+                    {/* {detail.Media &&
                       detail.Media.length !== 0 &&
                       detail.Media.map((media) => (
                         <Media
                           key={media.mediaId}
                           media={media.mediaId}
                         ></Media>
-                      ))}
+                      ))} */}
+                    {detail.Media && detail.Media.length !== 0 && (
+                      <Media
+                        key={detail.Media[0].mediaId}
+                        media={detail.Media[0].mediaId}
+                      ></Media>
+                    )}
                   </div>
                 </section>
               ))}

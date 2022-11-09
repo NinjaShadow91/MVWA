@@ -27,8 +27,11 @@ export default function UserCart() {
   const [cartItems, setCartItems] = useState<any | null>(null);
   const [cart, setCart] = useState<any | null>();
   const [products, setProducts] = useState<any | null>();
+  const [productInventoryIds, setProductInventoryIds] = useState<any | null>();
+  const [productInventories, setProductInventories] = useState<any | null>();
   const [deliveryEstimate, setDeliveryEstimate] = useState(0);
   const [taxEstimate, setTaxEstimate] = useState(0);
+  const [status, setStatus] = useState("loading");
   const [productsBasedOnPreviousOrders, setProductsBasedOnPreviousOrders] =
     useState<any | null>([]);
   trpc.useQuery(["cart.getCart", {}], {
@@ -41,15 +44,36 @@ export default function UserCart() {
     },
   });
 
-  trpc.useQuery(["product.getProductSKUsDetails", { productIds: cartItems }], {
-    enabled: !!cartItems,
+  trpc.useQuery(["product.getSKUsDetails", { productSKUIds: cartItems }], {
+    enabled: !!cartItems && cartItems.length > 0,
     onSuccess: (data) => {
       setProducts(data);
+      setProductInventoryIds(
+        data.map((product) => product.productInventoryIds).flat()
+      );
     },
     onError: (err) => {
       console.log(err);
     },
   });
+
+  trpc.useQuery(
+    [
+      "product.inventory.getInventories",
+      { productInventoryIds: productInventoryIds },
+    ],
+    {
+      enabled: !!productInventoryIds && productInventoryIds.length > 0,
+      onSuccess: (data) => {
+        setProductInventories(data);
+        setStatus("success");
+      },
+      onError: (err) => {
+        console.log(err);
+      },
+    }
+  );
+
   trpc.useQuery(["personalisation.getBasedOnPreviousOrders"], {
     onSuccess: (data) => {
       setProductsBasedOnPreviousOrders(data ?? null);
@@ -71,12 +95,14 @@ export default function UserCart() {
   });
 
   function getCartItemQuantity(productId: string) {
-    return cart?.Items.find((item) => item.productId === productId)?.quantity;
+    return cart.Items?.find((item) => item.productId === productId)?.quantity;
   }
 
   function getCartItemPrice(productId: string) {
-    if (products)
-      return products.find((item) => item.productId === productId).price;
+    console.log(typeof products);
+    if (productInventories && productInventories.length > 0)
+      return productInventories.find((item) => item.productId === productId)
+        .price;
   }
 
   function getCartTax() {
@@ -99,6 +125,18 @@ export default function UserCart() {
 
   function getCartTotal() {
     return getCartItemsTotal() + taxEstimate + deliveryEstimate;
+  }
+
+  function getInventoryStock(productId: string) {
+    console.log(productInventories);
+    console.log(productId);
+    if (productInventories) {
+      console.log(
+        productInventories.find((item) => item.productId === productId).stock
+      );
+      return productInventories.find((item) => item.productId === productId)
+        .stock;
+    }
   }
 
   function removeItemFromCart(productId: string) {
@@ -125,7 +163,7 @@ export default function UserCart() {
       {
         onSuccess: (data) => {
           console.log(data);
-          router.push("http://localhost:3000/user/order/all");
+          router.push("/user/order/all");
         },
         onError: (err) => {
           console.log(err);
@@ -133,6 +171,10 @@ export default function UserCart() {
       }
     );
   }
+
+  // if (status === "loading") {
+  //   return <div>Loading...</div>;
+  // }
 
   return (
     <div className="bg-white">
@@ -156,7 +198,7 @@ export default function UserCart() {
               {products &&
                 products.length !== 0 &&
                 products.map((product) => (
-                  <li key={product.id} className="flex py-6 sm:py-10">
+                  <li key={product.productSKUId} className="flex py-6 sm:py-10">
                     <div className="flex-shrink-0">
                       {product.Media && product.Media.length !== 0 && (
                         <Media media={product.Media[0].mediaId}></Media>
@@ -172,7 +214,7 @@ export default function UserCart() {
                                 href={getProductLink(product.productId)}
                                 className="font-medium text-gray-700 hover:text-gray-800"
                               >
-                                {product.name}
+                                {product.skuName}
                               </a>
                             </h3>
                           </div>
@@ -182,10 +224,11 @@ export default function UserCart() {
                             </p>
                           </div>
                           <p className="mt-1 text-sm font-medium text-gray-900">
-                            {product.price}
+                            {}
                           </p>
                           <p className="mt-1 text-sm font-medium text-gray-900">
-                            Quantity: {getCartItemQuantity(product.productId)}
+                            Quantity:{" "}
+                            {getCartItemQuantity(product.productSKUId)}
                           </p>
                         </div>
 
@@ -193,7 +236,7 @@ export default function UserCart() {
                           <div className="absolute top-0 right-0">
                             <button
                               onClick={() =>
-                                removeItemFromCart(product.productId)
+                                removeItemFromCart(product.productSKUId)
                               }
                               type="button"
                               className="-m-2 inline-flex p-2 text-gray-400 hover:text-gray-500"
@@ -210,7 +253,7 @@ export default function UserCart() {
 
                       <p className="mt-4 flex space-x-2 text-sm text-gray-700">
                         {product.stock >=
-                        getCartItemQuantity(product.productId) ? (
+                        getCartItemQuantity(product.productSKUId) ? (
                           <CheckIcon
                             className="h-5 w-5 flex-shrink-0 text-green-500"
                             aria-hidden="true"
@@ -223,8 +266,8 @@ export default function UserCart() {
                         )}
 
                         <span>
-                          {product.stock >=
-                          getCartItemQuantity(product.productId)
+                          {getInventoryStock(product.productSKUId) >=
+                          getCartItemQuantity(product.productSKUId)
                             ? "In stock"
                             : `Not available currently`}
                         </span>

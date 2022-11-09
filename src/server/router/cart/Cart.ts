@@ -103,6 +103,7 @@ export const CartRouter = createProtectedRouter()
   .mutation("addItem", {
     input: z.object({
       productId: z.string().uuid(),
+      // productInventoryId: z.string().uuid(),
       quantity: z.number().min(1),
     }),
     resolve: async ({ ctx, input }) => {
@@ -256,7 +257,8 @@ export const CartRouter = createProtectedRouter()
     },
   })
   .mutation("checkout", {
-    input: z.object({ addressId: z.string().uuid() }),
+    // input: z.object({ addressId: z.string().uuid() }),
+    input: z.object({}),
     resolve: async ({ ctx, input }) => {
       try {
         const cart = await ctx.prisma.cart.findUnique({
@@ -287,9 +289,9 @@ export const CartRouter = createProtectedRouter()
         const itemConfig = await Promise.all(
           cart.Items.map(async (item) => {
             const { stock, price } =
-              (await ctx.prisma.productInventory.findUnique({
+              (await ctx.prisma.productInventory.findFirst({
                 where: {
-                  productInventoryId: item.productId,
+                  productId: item.productId,
                 },
                 select: {
                   price: true,
@@ -316,11 +318,12 @@ export const CartRouter = createProtectedRouter()
 
         // race condition
 
-        const transcationArray: PrismaPromise<ProductInventory | Orders>[] =
-          cart.Items.map((item) => {
-            return ctx.prisma.productInventory.update({
+        const transcationArray: PrismaPromise<any>[] = cart.Items.map(
+          (item) => {
+            return ctx.prisma.productInventory.updateMany({
               where: {
-                productInventoryId: item.productId,
+                // productInventoryId: item.productId,
+                productId: item.productId,
               },
               data: {
                 stock: {
@@ -328,11 +331,14 @@ export const CartRouter = createProtectedRouter()
                 },
               },
             });
-          });
+          }
+        );
 
-        const UserAddress = await ctx.prisma.userAddress.findUnique({
+        // const UserAddress = await ctx.prisma.userAddress.findUnique({
+        const UserAddress = await ctx.prisma.userAddress.findFirst({
           where: {
-            userAddressId: input.addressId,
+            // userAddressId: input.addressId,
+            userId: ctx.session.user.id,
           },
           select: {
             line1: true,
@@ -354,6 +360,7 @@ export const CartRouter = createProtectedRouter()
             },
             LatitudeLongitude: {
               select: {
+                latitudeLongitudeId: true,
                 lat: true,
                 long: true,
               },
@@ -401,19 +408,32 @@ export const CartRouter = createProtectedRouter()
               },
             },
             LatitudeLongitude: {
-              create: {
-                lat: UserAddress.LatitudeLongitude.lat,
-                long: UserAddress.LatitudeLongitude.long,
+              connect: {
+                latitudeLongitudeId:
+                  UserAddress.LatitudeLongitude.latitudeLongitudeId,
               },
             },
             zipcode: UserAddress.zipcode,
             AddressType: {
               connect: {
-                name: "StandardDelivery",
+                name: "NORMAL",
               },
             },
           },
         });
+
+        const user = await ctx.prisma.user.findUnique({
+          where: {
+            id: ctx.session.user.id,
+          },
+        });
+
+        if (!user) {
+          throw throwTRPCError({
+            code: "NOT_FOUND",
+            message: "User not found",
+          });
+        }
 
         transcationArray.push(
           ctx.prisma.orders.update({
@@ -426,12 +446,25 @@ export const CartRouter = createProtectedRouter()
                   amount: item.cost,
                   DeliveryAddress: {
                     connect: {
-                      addressId: DeliveryAddress.orderAddressId,
+                      orderAddressId: DeliveryAddress.orderAddressId,
                     },
                   },
                   OrderStatus: {
                     connect: {
                       name: "PAID",
+                    },
+                  },
+                  User: {
+                    create: {
+                      name: user.name,
+                      email: user.email,
+                      Contact: user.email,
+                    },
+                  },
+                  Reciever: {
+                    create: {
+                      name: user.name,
+                      Contact: user.email,
                     },
                   },
                   productId: item.productId,
@@ -442,16 +475,18 @@ export const CartRouter = createProtectedRouter()
           })
         );
 
-        await ctx.prisma.$transaction(transcationArray);
+        transcationArray.push(
+          ctx.prisma.cartItem.updateMany({
+            where: {
+              cartId: cart.cartId,
+            },
+            data: {
+              deletedAt: new Date(),
+            },
+          })
+        );
 
-        await ctx.prisma.cartItem.updateMany({
-          where: {
-            cartId: cart.cartId,
-          },
-          data: {
-            deletedAt: new Date(),
-          },
-        });
+        await ctx.prisma.$transaction(transcationArray);
       } catch (err) {
         throw throwPrismaTRPCError({
           message: "Error clearing cart",

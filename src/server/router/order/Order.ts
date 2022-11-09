@@ -357,39 +357,39 @@ export const orderRouter = createProtectedRouter()
               });
             }
 
-            if (user.contacts === null || user.contacts.length === 0) {
-              throw throwTRPCError({
-                message: "User contact not found",
-                code: "NOT_FOUND",
-              });
-            }
+            // if (user.contacts === null || user.contacts.length === 0) {
+            //   throw throwTRPCError({
+            //     message: "User contact not found",
+            //     code: "NOT_FOUND",
+            //   });
+            // }
 
-            const contacts = await Promise.all(
-              user.contacts.map(async (contact) => {
-                return await ctx.prisma.userContact.findUnique({
-                  where: {
-                    userContactId: contact,
-                  },
-                  select: {
-                    userContactId: true,
-                    contact: true,
-                    deletedAt: true,
-                    ContactType: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                });
-              })
-            );
+            // const contacts = await Promise.all(
+            //   user.contacts.map(async (contact) => {
+            //     return await ctx.prisma.userContact.findUnique({
+            //       where: {
+            //         userContactId: contact,
+            //       },
+            //       select: {
+            //         userContactId: true,
+            //         contact: true,
+            //         deletedAt: true,
+            //         ContactType: {
+            //           select: {
+            //             name: true,
+            //           },
+            //         },
+            //       },
+            //     });
+            //   })
+            // );
 
-            if (contacts === null || contacts.length === 0) {
-              throw throwTRPCError({
-                message: "User contact not found",
-                code: "NOT_FOUND",
-              });
-            }
+            // if (contacts === null || contacts.length === 0) {
+            //   throw throwTRPCError({
+            //     message: "User contact not found",
+            //     code: "NOT_FOUND",
+            //   });
+            // }
 
             // const billingContacts = contacts.filter(
             //   (contact) =>
@@ -409,22 +409,23 @@ export const orderRouter = createProtectedRouter()
             //   return contact && !contact.deletedAt;
             // });
 
-            const billingContact = contacts.find((contact) => {
-              return contact && !contact.deletedAt;
-            });
+            // const billingContact = contacts.find((contact) => {
+            //   return contact && !contact.deletedAt;
+            // });
 
-            if (!billingContact) {
-              throw throwTRPCError({
-                message: "Billing contact not found",
-                code: "NOT_FOUND",
-              });
-            }
+            // if (!billingContact) {
+            //   throw throwTRPCError({
+            //     message: "Billing contact not found",
+            //     code: "NOT_FOUND",
+            //   });
+            // }
 
             const orderUser = await ctx.prisma.orderUser.create({
               data: {
                 name: user.name,
                 email: user.email,
-                Contact: billingContact.contact,
+                // Contact: billingContact.contact,
+                Contact: input.receiver.contact,
               },
             });
 

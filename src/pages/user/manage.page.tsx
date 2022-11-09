@@ -36,6 +36,7 @@ export default function UserManage() {
   trpc.useQuery(["user.address.getUserAddresses"], {
     enabled: !!user.data?.user?.id,
     onSuccess: (data) => {
+      console.log(data);
       setAddresses(data);
       setStatus(status + 1);
     },
@@ -45,9 +46,10 @@ export default function UserManage() {
     },
   });
 
-  trpc.useQuery(["user.notification.getNotificationProfile"], {
+  trpc.useQuery(["user.notification.getNotificationProfile", {}], {
     enabled: !!user.data?.user?.id,
     onSuccess: (data) => {
+      console.log(data);
       setNotificationProfile(data);
       setStatus(status + 1);
     },
@@ -57,9 +59,9 @@ export default function UserManage() {
     },
   });
 
-  if (status !== 3) {
-    return <div>Loading...</div>;
-  }
+  // if (status !== 3) {
+  //   return <div>Loading...</div>;
+  // }
 
   return (
     <div className="flex flex-col min-h-screen justify-around overflow-hidden">
@@ -92,7 +94,7 @@ export default function UserManage() {
                         type="text"
                         name="username"
                         id="username"
-                        defaultValue={profile.name}
+                        defaultValue={profile?.name}
                         autoComplete="username"
                         className="block w-full min-w-0 flex-grow rounded-none rounded-r-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       />
@@ -113,7 +115,7 @@ export default function UserManage() {
                         rows={3}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         placeholder="About you"
-                        defaultValue={profile.bio}
+                        defaultValue={profile?.bio}
                       />
                     </div>
                     <p className="mt-2 text-sm text-gray-500">

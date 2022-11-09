@@ -1,37 +1,142 @@
-import { createRouter } from "../context";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { createProtectedRouter, createRouter } from "../context";
 import { z } from "zod";
 import { throwPrismaTRPCError, throwTRPCError } from "../util";
 
-export const BannerRouter = createRouter().query("get", {
-  input: z.number().positive(),
+const EditorBannerRouter = createProtectedRouter().mutation("create", {
+  input: z.object({
+    title: z.string(),
+    query: z.string(),
+    productIds: z.string().uuid().array(),
+    description: z.string(),
+    mediaIds: z.string().uuid().array(),
+    tags: z.string().array(),
+  }),
   resolve: async ({ ctx, input }) => {
     try {
-      const res = await ctx.prisma.banner.findMany({
+      const user = await ctx.prisma.user.findUnique({
         where: {
-          deletedAt: null,
+          id: ctx.session.user.id,
         },
         select: {
-          bannerId: true,
-          title: true,
-          query: true,
-          // productIds: true,
-          description: true,
-          Media: { select: { mediaId: true } },
+          UserType: true,
         },
-        take: input,
       });
-      if (res === null || res.length === 0) {
+      if (!user || !user.UserType || user.UserType.name !== "editor") {
         throw throwTRPCError({
-          message: "Banner not found",
-          code: "NOT_FOUND",
+          message: "User is not an editor",
+          code: "UNAUTHORIZED",
         });
       }
+      const res = await ctx.prisma.banner.create({
+        data: {
+          title: input.title,
+          query: input.query,
+          description: input.description,
+          productIds: input.productIds,
+          Media: {
+            create: input.mediaIds.map((mediaId) => ({
+              mediaId,
+            })),
+          },
+          tags: {
+            connectOrCreate: input.tags.map((tag) => ({
+              where: {
+                name: tag,
+              },
+              create: {
+                name: tag,
+              },
+            })),
+          },
+        },
+      });
       return res;
     } catch (err) {
       throw throwPrismaTRPCError({
-        message: "Error getting banner",
+        message: "Error creating banner",
         cause: err,
       });
     }
   },
 });
+
+export const BannerRouter = createRouter()
+  .query("get", {
+    input: z.number().positive(),
+    resolve: async ({ ctx, input }) => {
+      try {
+        const res = await ctx.prisma.banner.findMany({
+          where: {
+            deletedAt: null,
+          },
+          select: {
+            bannerId: true,
+            title: true,
+            query: true,
+            // productIds: true,
+            description: true,
+            Media: { select: { mediaId: true } },
+          },
+          take: input,
+        });
+        if (res === null || res.length === 0) {
+          throw throwTRPCError({
+            message: "Banner not found",
+            code: "NOT_FOUND",
+          });
+        }
+        return res;
+      } catch (err) {
+        throw throwPrismaTRPCError({
+          message: "Error getting banner",
+          cause: err,
+        });
+      }
+    },
+  })
+  .merge("editor", EditorBannerRouter);
+
+// .mutation("create", {
+//   input: z.object({
+//     title: z.string(),
+//     query: z.string(),
+//     productIds: z.string().uuid().array(),
+//     description: z.string(),
+//     mediaIds: z.string().uuid().array(),
+//     tags: z.string().array(),
+//   }),
+//   resolve: async ({ ctx, input }) => {
+//     try {
+//       const res = await ctx.prisma.banner.create({
+//         data: {
+//           title: input.title,
+//           query: input.query,
+//           description: input.description,
+//           productIds: input.productIds,
+//           Media: {
+//             create: input.mediaIds.map((mediaId) => ({
+//               mediaId,
+//             })),
+//           },
+//           tags: {
+//             connectOrCreate: input.tags.map((tag) => ({
+//               where: {
+//                 name: tag,
+//               },
+//               create: {
+//                 name: tag,
+//               },
+//             })),
+//           },
+//         },
+//       });
+//       return res;
+//     } catch (err) {
+//       throw throwPrismaTRPCError({
+//         message: "Error creating banner",
+//         cause: err,
+//       });
+//     }
+//   },
+// });

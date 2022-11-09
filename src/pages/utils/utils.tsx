@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import { trpc } from "../../utils/trpc";
 
 const ValidatorRegEx = new Map<string, RegExp>([
@@ -59,35 +59,36 @@ export const Media = ({ media }: { media: string }) => {
 };
 
 export const getProductLink = (identifier: string) => {
-  return `http://localhost:3000/product/${identifier}`;
+  return `/product/${identifier}`;
 };
 
 export const getProductEditLink = (identifier: string) => {
-  return `http://localhost:3000/seller/editproduct?id=${identifier}`;
+  return `/seller/editproduct?id=${identifier}`;
 };
 
 export const getStoreEditLink = (identifier: string) => {
-  return `http://localhost:3000/seller/editstore?id=${identifier}`;
+  return `/seller/editstore?id=${identifier}`;
 };
 
 export const getStoreLink = (identifier: string) => {
-  return `http://localhost:3000/seller/store?storeId=${identifier}`;
+  return `/seller/store?storeId=${identifier}`;
 };
 
 export const getAddProductLink = (identifier: string) => {
-  return `http://localhost:3000/seller/addproduct?id=${identifier}`;
+  return `/seller/addproduct?id=${identifier}`;
 };
 
 export const getOpenStoreLink = () => {
-  return `http://localhost:3000/seller/openstore`;
+  return `/seller/openstore`;
 };
 
 export const getOrderLink = (orderId: string) => {
-  return `http://localhost:3000/user/order/${orderId}`;
+  return `/user/order/${orderId}`;
 };
 
 // [text](link)
 export function getProductDescription(desc: string) {
+  if (!desc) return "";
   const elements: ReactElement[] = [];
   const caseSensitive = true;
   const searchStr1 = "[";
@@ -104,7 +105,6 @@ export function getProductDescription(desc: string) {
     const index2 = desc.indexOf(searchStr2, index1);
     const index3 = desc.indexOf(searchStr3, index2);
     const index4 = desc.indexOf(searchStr4, index3);
-    // console.log(startIndex, index1, index2, index3, index4);
     if (index1 > -1 && index2 > -1 && index3 > -1 && index4 > -1) {
       elements.push(<span>{desc.substring(startIndex, index1)}</span>);
       elements.push(
@@ -122,6 +122,7 @@ export function getProductDescription(desc: string) {
 }
 
 export function getProductDescriptionSecure(desc: string) {
+  if (!desc) return "";
   const elements: ReactElement[] = [];
   const caseSensitive = true;
   const searchStr1 = "[";

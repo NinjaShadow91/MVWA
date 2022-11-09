@@ -27,11 +27,11 @@ export default function Navbar({
   const userNavigation = [
     {
       name: "Manage Account",
-      href: "http://localhost:3000/user/manage",
+      href: "/user/manage",
     },
     {
       name: "Sign out",
-      href: "http://localhost:3000/auth/signout",
+      href: "/auth/signout",
     },
   ];
   const [searchQuery, setSearchQuery] = useState(searchQueryP ?? "");
@@ -166,7 +166,7 @@ export default function Navbar({
                 ) : (
                   <div className="relative ml-4 flex-shrink-0">
                     <a
-                      href="http://localhost:3000/auth/signin"
+                      href="/auth/signin"
                       className="flex rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
                       <span className="sr-only">SignIn</span>
@@ -272,7 +272,7 @@ export default function Navbar({
             ) : (
               <div className="relative ml-4 flex-shrink-0">
                 <a
-                  href="http://localhost:3000/auth/signin"
+                  href="/auth/signin"
                   className="flex rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   <span className="sr-only">SignIn</span>

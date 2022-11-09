@@ -4,6 +4,142 @@ import { prisma } from "./client";
 
 export async function insertData() {
   try {
+    const mt = await prisma.mediaType.create({
+      data: {
+        name: "REGULAR_IMAGE",
+      },
+    });
+
+    await prisma.media.create({
+      data: {
+        url: "/img/ecommerce/01.jpg",
+        altText: "testing product related image",
+        Type: {
+          connect: {
+            name: "REGULAR_IMAGE",
+          },
+        },
+      },
+    });
+
+    await prisma.media.create({
+      data: {
+        url: "/img/ecommerce/02.jpg",
+        altText: "testing product related image",
+        Type: {
+          connect: {
+            name: "REGULAR_IMAGE",
+          },
+        },
+      },
+    });
+
+    await prisma.media.create({
+      data: {
+        url: "/img/ecommerce/03.jpg",
+        altText: "testing product related image",
+        Type: {
+          connect: {
+            name: "REGULAR_IMAGE",
+          },
+        },
+      },
+    });
+    await prisma.media.create({
+      data: {
+        url: "/img/ecommerce/04.jpg",
+        altText: "testing product related image",
+        Type: {
+          connect: {
+            name: "REGULAR_IMAGE",
+          },
+        },
+      },
+    });
+    await prisma.media.create({
+      data: {
+        url: "/img/ecommerce/05.jpg",
+        altText: "testing product related image",
+        Type: {
+          connect: {
+            name: "REGULAR_IMAGE",
+          },
+        },
+      },
+    });
+    // await prisma.media.create({
+    //   data: {
+    //     url: "/img/ecommerce/06.jpg",
+    //     altText: "testing product related image",
+    //     Type: {
+    //       connect: {
+    //         name: "REGULAR_IMAGE",
+    //       },
+    //     },
+    //   },
+    // });
+    // await prisma.media.create({
+    //   data: {
+    //     url: "/img/ecommerce/07.jpg",
+    //     altText: "testing product related image",
+    //     Type: {
+    //       connect: {
+    //         name: "REGULAR_IMAGE",
+    //       },
+    //     },
+    //   },
+    // });
+    // await prisma.media.create({
+    //   data: {
+    //     url: "/img/ecommerce/08.jpg",
+    //     altText: "testing product related image",
+    //     Type: {
+    //       connect: {
+    //         name: "REGULAR_IMAGE",
+    //       },
+    //     },
+    //   },
+    // });
+    // await prisma.media.create({
+    //   data: {
+    //     url: "/img/ecommerce/09.jpg",
+    //     altText: "testing product related image",
+    //     Type: {
+    //       connect: {
+    //         name: "REGULAR_IMAGE",
+    //       },
+    //     },
+    //   },
+    // });
+
+    // await prisma.media.create({
+    //   data: {
+    //     url: "/img/ecommerce/10.jpg",
+    //     altText: "testing product related image",
+    //     Type: {
+    //       connect: {
+    //         name: "REGULAR_IMAGE",
+    //       },
+    //     },
+    //   },
+    // });
+
+    // await prisma.media.create({
+    //   data: {
+    //     url: "/img/ecommerce/11.jpg",
+    //     altText: "testing product related image",
+    //     Type: {
+    //       connect: {
+    //         name: "REGULAR_IMAGE",
+    //       },
+    //     },
+    //   },
+    // });
+  } catch (e) {
+    console.log(e);
+  }
+
+  try {
     await prisma.city.create({
       data: {
         name: "Delhi",
@@ -765,6 +901,7 @@ export async function insertData() {
           const insertProduct = async (inputP: any) => {
             // transaction
             // Dont create new technical details if they already exist
+            // console.log(inputP.images, "c2");
             const product = await prisma.product.create({
               data: {
                 name: inputP.product.name,
@@ -786,7 +923,11 @@ export async function insertData() {
                   create: inputP.product.details.map((detail) => ({
                     heading: detail.heading,
                     description: detail.description,
-                    Media: { create: detail.descriptionImages },
+                    Media: {
+                      create: detail.descriptionImages.map((image) => ({
+                        mediaId: image,
+                      })),
+                    },
                   })),
                 },
                 TechnicalDetails: {
@@ -847,6 +988,11 @@ export async function insertData() {
                   connect: {
                     productId: product.productId,
                   },
+                },
+                Media: {
+                  create: inputP.product.images?.map((image) => ({
+                    mediaId: image,
+                  })),
                 },
               },
             });
@@ -911,6 +1057,11 @@ export async function insertData() {
             return productF;
           };
 
+          const media = await prisma.media.findMany({});
+          const mediaIds = media.map((m) => {
+            return m.mediaId;
+          });
+
           const inputP = [
             {
               storeId: store.storeId,
@@ -919,7 +1070,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -938,22 +1089,68 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product1",
+                price: 1000,
+                stock: 100,
+                description: "This is product description",
+                // images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+                images: mediaIds,
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: mediaIds,
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: mediaIds,
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -965,7 +1162,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 2 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -984,22 +1181,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1011,7 +1208,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 3 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1030,22 +1227,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1057,7 +1254,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 4 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1076,22 +1273,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1103,7 +1300,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 5 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1122,22 +1319,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1149,7 +1346,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 6 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1168,22 +1365,68 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
+                  },
+                ],
+              },
+            },
+            {
+              storeId: store.storeId,
+              product: {
+                name: "product1",
+                price: 1000,
+                stock: 100,
+                description: "This is product description",
+                // images: [],
+                giftOptionAvailable: true,
+                paymentMethods: [],
+                replaceFrame: 7,
+                returnFrame: 0,
+                tags: undefined,
+                brand: undefined,
+                category: undefined,
+                // variants: z.string().uuid().array().nullish(),
+                technicalDetails: [
+                  {
+                    key: "Rated Power",
+                    value: "220",
+                  },
+                  {
+                    key: "Warranty time period",
+                    value: "2 Years",
+                  },
+                ],
+                images: mediaIds,
+                details: [
+                  {
+                    heading: "Big Screen",
+                    description: "48 inch screen",
+                    descriptionImages: mediaIds,
+                  },
+                  {
+                    heading: "Powerful Processor",
+                    description: "24 cores processor",
+                    descriptionImages: mediaIds,
+                  },
+                  {
+                    heading: "Powerful Sound",
+                    description: "Bass Boosted Sound",
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1195,7 +1438,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 7 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1214,22 +1457,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1241,7 +1484,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 8 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1260,22 +1503,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1287,7 +1530,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 9 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1306,22 +1549,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1333,7 +1576,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 10 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1352,22 +1595,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1379,7 +1622,7 @@ export async function insertData() {
                 price: 1000,
                 stock: 100,
                 description: "This is product 11 description",
-                images: [],
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1398,22 +1641,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },
@@ -1421,11 +1664,11 @@ export async function insertData() {
             {
               storeId: store.storeId,
               product: {
-                name: "product8",
+                name: "product bad",
                 price: 1000,
                 stock: 100,
-                description: "This is product 8 description",
-                images: [],
+                description: "This is product 12 description",
+                // images: [],
                 giftOptionAvailable: true,
                 paymentMethods: [],
                 replaceFrame: 7,
@@ -1444,68 +1687,22 @@ export async function insertData() {
                     value: "2 Years",
                   },
                 ],
-
+                images: mediaIds,
                 details: [
                   {
                     heading: "Big Screen",
                     description: "48 inch screen",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Processor",
                     description: "24 cores processor",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                   {
                     heading: "Powerful Sound",
                     description: "Bass Boosted Sound",
-                    descriptionImages: [],
-                  },
-                ],
-              },
-            },
-            {
-              storeId: store.storeId,
-              product: {
-                name: "product13",
-                price: 1000,
-                stock: 100,
-                description: "This is product 13 description",
-                images: [],
-                giftOptionAvailable: true,
-                paymentMethods: [],
-                replaceFrame: 7,
-                returnFrame: 0,
-                tags: undefined,
-                brand: undefined,
-                category: undefined,
-                // variants: z.string().uuid().array().nullish(),
-                technicalDetails: [
-                  {
-                    key: "Rated Power",
-                    value: "220",
-                  },
-                  {
-                    key: "Warranty time period",
-                    value: "2 Years",
-                  },
-                ],
-
-                details: [
-                  {
-                    heading: "Big Screen",
-                    description: "48 inch screen",
-                    descriptionImages: [],
-                  },
-                  {
-                    heading: "Powerful Processor",
-                    description: "24 cores processor",
-                    descriptionImages: [],
-                  },
-                  {
-                    heading: "Powerful Sound",
-                    description: "Bass Boosted Sound",
-                    descriptionImages: [],
+                    descriptionImages: mediaIds,
                   },
                 ],
               },

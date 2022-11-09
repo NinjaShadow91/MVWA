@@ -1019,6 +1019,20 @@ model BannerMedia {
     bannerId      String?   @db.Uuid
 }
 
+// Favourite Product Service
+
+model FavouriteProduct {
+    favouriteProductId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name               String
+    productId          String    @db.Uuid
+    categoryId         String?   @db.Uuid
+    createdAt          DateTime  @default(now())
+    updatedAt          DateTime  @updatedAt
+    deletedAt          DateTime?
+
+    @@unique([productId, categoryId])
+}
+
 // brand service
 
 model Brand {
@@ -1066,7 +1080,7 @@ model Media {
 
 model MediaType {
     mediaTypeId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name        String
+    name        String    @unique
     Media       Media[]
     createdAt   DateTime  @default(now())
     updatedAt   DateTime  @updatedAt
