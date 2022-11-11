@@ -12,7 +12,7 @@ import { useRouter } from "next/router";
 //   { name: "Calendar", href: "#", current: false },
 // ];
 
-function classNames(...classes) {
+function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
@@ -20,7 +20,7 @@ export default function Navbar({
   navigation,
   searchQueryP,
 }: {
-  navigation: any;
+  navigation: any | undefined;
   searchQueryP: string | undefined;
 }) {
   const user = useSession();
@@ -111,16 +111,18 @@ export default function Navbar({
                 </button>
 
                 {/* Profile dropdown */}
-                {user.status === "authenticated" ? (
+                {user.status === "authenticated" && user.data.user ? (
                   <Menu as="div" className="relative ml-4 flex-shrink-0">
                     <div>
                       <Menu.Button className="flex rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         <span className="sr-only">Open user menu</span>
-                        <img
-                          className="h-8 w-8 rounded-full"
-                          src={user.image}
-                          alt=""
-                        />
+                        {user.data.user && user.data.user.image && (
+                          <img
+                            className="h-8 w-8 rounded-full"
+                            src={user.data.user.image}
+                            alt=""
+                          />
+                        )}
                       </Menu.Button>
                     </div>
                     <Transition
@@ -137,10 +139,10 @@ export default function Navbar({
                           {({ active }) => (
                             <div className="p-1 m-1">
                               <div className="text-base font-medium text-gray-800">
-                                {user.data.user.name}
+                                {user.data.user?.name}
                               </div>
                               <div className="text-sm font-medium text-gray-500">
-                                {user.data.user.email}
+                                {user.data.user?.email}
                               </div>
                             </div>
                           )}
@@ -234,18 +236,20 @@ export default function Navbar({
               <div className="border-t border-gray-200 pt-4 pb-3">
                 <div className="flex items-center px-4">
                   <div className="flex-shrink-0">
-                    <img
-                      className="h-10 w-10 rounded-full"
-                      src={user.data.user.image}
-                      alt=""
-                    />
+                    {user.data.user && user.data.user.image && (
+                      <img
+                        className="h-8 w-8 rounded-full"
+                        src={user.data.user.image}
+                        alt=""
+                      />
+                    )}
                   </div>
                   <div className="ml-3">
                     <div className="text-base font-medium text-gray-800">
-                      {user.data.user.name}
+                      {user.data.user?.name}
                     </div>
                     <div className="text-sm font-medium text-gray-500">
-                      {user.data.user.email}
+                      {user.data.user?.email}
                     </div>
                   </div>
                   <button

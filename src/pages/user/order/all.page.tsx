@@ -12,7 +12,7 @@ import { getOrderLink, getProductLink, Media } from "../../utils/utils";
 import { useRouter } from "next/router";
 import { ProductRecommendationBasedOnPreviousOrders } from "../../../server/router/personalisation/BasedOnPreviousOrders";
 
-function classNames(...classes) {
+function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 

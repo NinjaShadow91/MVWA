@@ -219,7 +219,6 @@ export const authRouter = createRouter()
                   });
                   console.log(token);
                   // send mail to user.email, subject Password Reset and with link auth/forgot-password?token=  --token---
-                  return token;
                 } catch (err) {
                   throw throwPrismaTRPCError({
                     cause: err,
@@ -470,7 +469,6 @@ export const authRouter = createRouter()
                   const host = ctx.req.headers.host ?? "";
                   console.log(host.concat("?token=").concat(token));
                   // send mail to user.email, subject Password Reset and with link auth/forgot-password?token=  --token---
-                  return token;
                 } catch (err) {
                   throw throwPrismaTRPCError({
                     cause: err,

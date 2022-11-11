@@ -4,142 +4,6 @@ import { prisma } from "./client";
 
 export async function insertData() {
   try {
-    const mt = await prisma.mediaType.create({
-      data: {
-        name: "REGULAR_IMAGE",
-      },
-    });
-
-    await prisma.media.create({
-      data: {
-        url: "/img/ecommerce/01.jpg",
-        altText: "testing product related image",
-        Type: {
-          connect: {
-            name: "REGULAR_IMAGE",
-          },
-        },
-      },
-    });
-
-    await prisma.media.create({
-      data: {
-        url: "/img/ecommerce/02.jpg",
-        altText: "testing product related image",
-        Type: {
-          connect: {
-            name: "REGULAR_IMAGE",
-          },
-        },
-      },
-    });
-
-    await prisma.media.create({
-      data: {
-        url: "/img/ecommerce/03.jpg",
-        altText: "testing product related image",
-        Type: {
-          connect: {
-            name: "REGULAR_IMAGE",
-          },
-        },
-      },
-    });
-    await prisma.media.create({
-      data: {
-        url: "/img/ecommerce/04.jpg",
-        altText: "testing product related image",
-        Type: {
-          connect: {
-            name: "REGULAR_IMAGE",
-          },
-        },
-      },
-    });
-    await prisma.media.create({
-      data: {
-        url: "/img/ecommerce/05.jpg",
-        altText: "testing product related image",
-        Type: {
-          connect: {
-            name: "REGULAR_IMAGE",
-          },
-        },
-      },
-    });
-    // await prisma.media.create({
-    //   data: {
-    //     url: "/img/ecommerce/06.jpg",
-    //     altText: "testing product related image",
-    //     Type: {
-    //       connect: {
-    //         name: "REGULAR_IMAGE",
-    //       },
-    //     },
-    //   },
-    // });
-    // await prisma.media.create({
-    //   data: {
-    //     url: "/img/ecommerce/07.jpg",
-    //     altText: "testing product related image",
-    //     Type: {
-    //       connect: {
-    //         name: "REGULAR_IMAGE",
-    //       },
-    //     },
-    //   },
-    // });
-    // await prisma.media.create({
-    //   data: {
-    //     url: "/img/ecommerce/08.jpg",
-    //     altText: "testing product related image",
-    //     Type: {
-    //       connect: {
-    //         name: "REGULAR_IMAGE",
-    //       },
-    //     },
-    //   },
-    // });
-    // await prisma.media.create({
-    //   data: {
-    //     url: "/img/ecommerce/09.jpg",
-    //     altText: "testing product related image",
-    //     Type: {
-    //       connect: {
-    //         name: "REGULAR_IMAGE",
-    //       },
-    //     },
-    //   },
-    // });
-
-    // await prisma.media.create({
-    //   data: {
-    //     url: "/img/ecommerce/10.jpg",
-    //     altText: "testing product related image",
-    //     Type: {
-    //       connect: {
-    //         name: "REGULAR_IMAGE",
-    //       },
-    //     },
-    //   },
-    // });
-
-    // await prisma.media.create({
-    //   data: {
-    //     url: "/img/ecommerce/11.jpg",
-    //     altText: "testing product related image",
-    //     Type: {
-    //       connect: {
-    //         name: "REGULAR_IMAGE",
-    //       },
-    //     },
-    //   },
-    // });
-  } catch (e) {
-    console.log(e);
-  }
-
-  try {
     await prisma.city.create({
       data: {
         name: "Delhi",
@@ -798,6 +662,147 @@ export async function insertData() {
         })) ?? { id: "", name: "", email: "" };
       // if (id !== "") return { isSuccess: true, user: { id, name, email } };
       // else return { isSuccess: false, user: null };
+
+      try {
+        const mt = await prisma.mediaType.create({
+          data: {
+            name: "image/jpeg",
+          },
+        });
+
+        await prisma.media.create({
+          data: {
+            url: "/img/ecommerce/01.jpg",
+            altText: "testing product related image",
+            ownerId: id,
+            Type: {
+              connect: {
+                name: mt.name,
+              },
+            },
+          },
+        });
+
+        await prisma.media.create({
+          data: {
+            url: "/img/ecommerce/02.jpg",
+            altText: "testing product related image",
+            ownerId: id,
+            Type: {
+              connect: {
+                name: mt.name,
+              },
+            },
+          },
+        });
+
+        await prisma.media.create({
+          data: {
+            url: "/img/ecommerce/03.jpg",
+            altText: "testing product related image",
+            ownerId: id,
+            Type: {
+              connect: {
+                name: mt.name,
+              },
+            },
+          },
+        });
+        await prisma.media.create({
+          data: {
+            url: "/img/ecommerce/04.jpg",
+            altText: "testing product related image",
+            ownerId: id,
+            Type: {
+              connect: {
+                name: mt.name,
+              },
+            },
+          },
+        });
+        await prisma.media.create({
+          data: {
+            url: "/img/ecommerce/05.jpg",
+            altText: "testing product related image",
+            ownerId: id,
+            Type: {
+              connect: {
+                name: mt.name,
+              },
+            },
+          },
+        });
+        // await prisma.media.create({
+        //   data: {
+        //     url: "/img/ecommerce/06.jpg",
+        //     altText: "testing product related image",
+        //     Type: {
+        //       connect: {
+        //         name: "REGULAR_IMAGE",
+        //       },
+        //     },
+        //   },
+        // });
+        // await prisma.media.create({
+        //   data: {
+        //     url: "/img/ecommerce/07.jpg",
+        //     altText: "testing product related image",
+        //     Type: {
+        //       connect: {
+        //         name: "REGULAR_IMAGE",
+        //       },
+        //     },
+        //   },
+        // });
+        // await prisma.media.create({
+        //   data: {
+        //     url: "/img/ecommerce/08.jpg",
+        //     altText: "testing product related image",
+        //     Type: {
+        //       connect: {
+        //         name: "REGULAR_IMAGE",
+        //       },
+        //     },
+        //   },
+        // });
+        // await prisma.media.create({
+        //   data: {
+        //     url: "/img/ecommerce/09.jpg",
+        //     altText: "testing product related image",
+        //     Type: {
+        //       connect: {
+        //         name: "REGULAR_IMAGE",
+        //       },
+        //     },
+        //   },
+        // });
+
+        // await prisma.media.create({
+        //   data: {
+        //     url: "/img/ecommerce/10.jpg",
+        //     altText: "testing product related image",
+        //     Type: {
+        //       connect: {
+        //         name: "REGULAR_IMAGE",
+        //       },
+        //     },
+        //   },
+        // });
+
+        // await prisma.media.create({
+        //   data: {
+        //     url: "/img/ecommerce/11.jpg",
+        //     altText: "testing product related image",
+        //     Type: {
+        //       connect: {
+        //         name: "REGULAR_IMAGE",
+        //       },
+        //     },
+        //   },
+        // });
+      } catch (e) {
+        console.log(e);
+      }
 
       try {
         const input = {

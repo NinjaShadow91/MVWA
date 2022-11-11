@@ -64,8 +64,7 @@ const SignIn: NextPage<{ providers: Provider | null }> = ({ providers }) => {
           setErrorMessage("An error occured, please try again.");
           break;
         default:
-          // setErrorMessage("");
-          setErrorMessage(errorCode);
+          setErrorMessage("");
           break;
       }
     }

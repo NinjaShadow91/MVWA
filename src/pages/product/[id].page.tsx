@@ -14,7 +14,7 @@ import {
   Media,
 } from "../utils/utils";
 
-function classNames(...classes) {
+function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 

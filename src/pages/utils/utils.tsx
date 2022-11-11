@@ -51,7 +51,7 @@ export const Media = ({ media }: { media: string }) => {
     <Image
       height={200}
       width={200}
-      src={url}
+      src={`http://localhost:8080/fileRetrieve?token=${media}`}
       alt={altText}
       className="h-full w-full object-cover object-center"
     />

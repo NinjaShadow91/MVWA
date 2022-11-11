@@ -2,14 +2,26 @@ import type { NextPage } from "next";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { trpc } from "../../utils/trpc";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import { Uppy } from "@uppy/core";
+import ImageEditor from "@uppy/image-editor";
+import Tus from "@uppy/tus";
+import { Dashboard, useUppy } from "@uppy/react";
+import "@uppy/core/dist/style.css";
+import "@uppy/image-editor/dist/style.css";
+import "@uppy/dashboard/dist/style.css";
+import { XHRUpload } from "uppy";
 
 const AddProduct: NextPage = () => {
   const router = useRouter();
   const trpcAddProduct = trpc.useMutation(["seller.addProduct"]);
   const [status, setStatus] = useState("loading");
   const [storeId, setStoreId] = useState(router.query.storeId as string);
+  const [tokens, setTokens] = useState<string[]>([]);
+  const [tokenError, setTokenError] = useState(false);
+  const mediaIds = useRef<string[]>([]);
+  const trpcMediaTokens = trpc.useMutation(["media.protected.add"]);
 
   const productName = useRef("");
   const productDescription = useRef("");
@@ -19,6 +31,98 @@ const AddProduct: NextPage = () => {
   const productGiftOftionAvailable = useRef(false);
   const productReplaceFrame = useRef(0);
   const productReturnFrame = useRef(0);
+
+  const uppy = useUppy(() => {
+    const uppy = new Uppy({
+      onBeforeFileAdded: (currentFile, files) => {
+        console.log(currentFile, files);
+        return { ...currentFile, token: "token" };
+      },
+    });
+    uppy.on("file-added", async (file) => {
+      await trpcMediaTokens
+        .mutateAsync(1)
+        .then((res) => {
+          if (res.length > 0) {
+            console.log("token", res[0]!);
+            uppy.setFileMeta(file.id, {
+              token: res[0],
+            });
+          } else {
+            return Promise.reject("No token");
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+    uppy.on("upload-success", (file, response) => {
+      console.log("upload-success", response);
+      // setMedias((prev) => [...prev, response.body.data[0].mediaId]);
+      mediaIds.current.push(response.body.data[0].mediaId);
+    });
+    // uppy.use(Webcam);
+    uppy.use(ImageEditor, {
+      id: "ImageEditor",
+      // quality: 15,
+      cropperOptions: {
+        viewMode: 1,
+        background: false,
+        autoCropArea: 1,
+        responsive: true,
+        croppedCanvasOptions: {},
+      },
+      actions: {
+        revert: true,
+        rotate: true,
+        granularRotate: true,
+        flip: true,
+        zoomIn: true,
+        zoomOut: true,
+        cropSquare: true,
+        cropWidescreen: true,
+        cropWidescreenVertical: true,
+      },
+    });
+    // uppy.use(Form, {
+    //   triggerUploadOnSubmit: true,
+    //   addResultToForm: true,
+    //   id: props.formId,
+    //   resultName: props.resultId,
+    // });
+    // uppy.use(Tus, {
+    //   endpoint: "http://localhost:8080",
+    //   retryDelays: [0, 1000, 3000, 5000],
+    //   onBeforeRequest: async function (req, file) {
+    //     // req.setHeader("Authorization", "Bearer " + file.token);
+    //     await trpcMediaTokens
+    //       .mutateAsync(1)
+    //       .then((res) => {
+    //         if (res.length > 0) {
+    //           console.log("token", res[0]!);
+    //           req.setHeader("token".concat(res[0]!), "");
+    //         } else {
+    //           return Promise.reject("No token");
+    //         }
+    //       })
+    //       .catch((err) => {
+    //         console.log(err);
+    //       });
+    //   },
+    //   onAfterResponse(req, res) {
+    //     console.log(res);
+    //   },
+    // });
+
+    uppy.use(XHRUpload, {
+      endpoint: "http://localhost:8080/fileUpload/",
+    });
+
+    return uppy;
+  });
+  useEffect(() => {
+    return () => uppy.close({ reason: "unmount" });
+  }, [uppy]);
 
   useEffect(() => {
     if (router.isReady) {
@@ -32,8 +136,11 @@ const AddProduct: NextPage = () => {
     }
   }, [storeId]);
 
-  function addProduct() {
-    console.log("add product", storeId);
+  async function addProduct() {
+    // console.log("add product", storeId);
+
+    await uppy.upload();
+
     trpcAddProduct.mutate(
       {
         storeId: storeId,
@@ -48,7 +155,7 @@ const AddProduct: NextPage = () => {
           //   paymentMethods: ["all"],
           paymentMethods: [],
           tags: [],
-          images: [],
+          images: mediaIds.current,
           details: [],
           technicalDetails: [],
         },
@@ -77,6 +184,7 @@ const AddProduct: NextPage = () => {
           <form
             className="space-y-8 divide-y divide-gray-200"
             autoComplete="off"
+            id="productAddForm"
           >
             <div className="space-y-8 divide-y divide-gray-200">
               <div>
@@ -243,9 +351,9 @@ const AddProduct: NextPage = () => {
                       htmlFor="cover-photo"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Photo
+                      Product Images
                     </label>
-                    <div className="mt-1 flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6">
+                    {/* <div className="mt-1 flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6">
                       <div className="space-y-1 text-center">
                         <svg
                           className="mx-auto h-12 w-12 text-gray-400"
@@ -273,6 +381,7 @@ const AddProduct: NextPage = () => {
                               type="file"
                               className="sr-only"
                             />
+                            
                           </label>
                           <p className="pl-1">or drag and drop</p>
                         </div>
@@ -280,7 +389,23 @@ const AddProduct: NextPage = () => {
                           PNG, JPG, GIF up to 10MB
                         </p>
                       </div>
-                    </div>
+                    </div> */}
+                    <Dashboard
+                      uppy={uppy}
+                      plugins={["Webcam", "ImageEditor"]}
+                      proudlyDisplayPoweredByUppy={false}
+                      width={750}
+                      height={550}
+                      thumbnailWidth={280}
+                      metaFields={[
+                        {
+                          id: "altText",
+                          name: "Alternative Text",
+                          placeholder: "Alternative Text",
+                        },
+                      ]}
+                      hideUploadButton={true}
+                    />
                   </div>
                 </div>
               </div>
@@ -299,7 +424,9 @@ const AddProduct: NextPage = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => addProduct()}
+                  onClick={async () => {
+                    await addProduct();
+                  }}
                   className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   Save

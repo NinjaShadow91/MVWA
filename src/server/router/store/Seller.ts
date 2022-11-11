@@ -192,15 +192,31 @@ export const sellerRouter = createProtectedRouter()
                 });
               }
             } else if (input.product) {
+              const mediaAllowed = await ctx.prisma.media.findMany({
+                where: {
+                  mediaId: { in: input.product.images ?? [] },
+                  ownerId: ctx.session.user.id,
+                },
+                select: {
+                  mediaId: true,
+                },
+              });
+
               // transaction
               // Dont create new technical details if they already exist
+              console.log(input.product.images);
               const product = await ctx.prisma.product.create({
                 data: {
                   name: input.product.name,
                   description: input.product.description,
+                  // Media: {
+                  //   connect: input.product.images?.map((image) => ({
+                  //     productMediaId: image,
+                  //   })),
+                  // },
                   Media: {
-                    create: input.product.images?.map((image) => ({
-                      mediaId: image,
+                    create: mediaAllowed.map((image) => ({
+                      mediaId: image.mediaId,
                     })),
                   },
                   Category: input.product.category
