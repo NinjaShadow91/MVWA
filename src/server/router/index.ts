@@ -1,7 +1,7 @@
 // src/server/router/index.ts
 import { createRouter } from "./context";
 import { productRouter } from "./ProductDetails";
-import { UserDataRouter } from "./UserData";
+import { UserDataRouter } from "./User";
 import superjson from "superjson";
 import { authRouter } from "./Auth";
 import { StoreRouter } from "./Store";
