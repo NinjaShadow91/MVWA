@@ -670,6 +670,17 @@ export async function insertData() {
           },
         });
 
+        // await prisma.mediaType.createMany({
+        //   data: [
+        //     {
+        //       name: "image/gif",
+        //     },
+        //     {
+        //       name: "video/mp4",
+        //     },
+        //   ],
+        // });
+
         await prisma.media.create({
           data: {
             url: "/img/ecommerce/01.jpg",

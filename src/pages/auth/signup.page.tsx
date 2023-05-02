@@ -19,8 +19,8 @@ const SignUp: NextPage<{ providers: Provider | null }> = ({ providers }) => {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   1;
-  const trpcSignUP = trpc.useMutation(["auth.signupV1"]);
-  // const trpcSignUP = trpc.useMutation(["auth.signup"]);
+  // const trpcSignUP = trpc.useMutation(["auth.signupV1"]);
+  const trpcSignUP = trpc.useMutation(["auth.signup"]);
 
   const [inputEmailError, setInputEmailError] = useState(false);
   const [inputPasswordError, setInputPasswordError] = useState(false);

@@ -11,8 +11,30 @@ export const userAddressRouter = createProtectedRouter()
           where: {
             userId: ctx.session.user.id,
           },
+          select: {
+            userAddressId: true,
+            line1: true,
+            line2: true,
+            City: {
+              select: {
+                name: true,
+                State: {
+                  select: {
+                    identifier: true,
+                    Country: {
+                      select: {
+                        code: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            zipcode: true,
+            deletedAt: true,
+          },
         });
-        return address.map((address) => {
+        return address.filter((address) => {
           return address.deletedAt ? false : true;
         });
       } catch (e) {
@@ -51,9 +73,9 @@ export const userAddressRouter = createProtectedRouter()
     input: z.object({
       line1: z.string(),
       line2: z.string().optional(),
-      city: z.string().uuid(),
-      state: z.string().uuid(),
-      country: z.string().uuid(),
+      city: z.string(),
+      state: z.string(),
+      country: z.string(),
       zipcode: z.string(),
       addressType: z.string(),
     }),
@@ -72,20 +94,44 @@ export const userAddressRouter = createProtectedRouter()
           });
         }
 
+        const city = await ctx.prisma.city.findFirst({
+          where: {
+            name: input.city,
+            State: {
+              identifier: input.state,
+              Country: {
+                code: input.country,
+              },
+            },
+          },
+        });
+
+        if (!city) {
+          throw throwTRPCError({
+            code: "BAD_REQUEST",
+            message: "City not found",
+          });
+        }
+        const latLing = await ctx.prisma.latitudeLongitude.findFirstOrThrow({
+          where: {
+            lat: 0,
+            long: 0,
+          },
+        });
+
         const address = await ctx.prisma.userAddress.create({
           data: {
             line1: input.line1,
             line2: input.line2,
             City: {
               connect: {
-                cityId: input.city,
+                cityId: city.cityId,
               },
             },
             // Add logic to get latting and longitude from address
             LatitudeLongitude: {
-              create: {
-                lat: 0,
-                long: 0,
+              connect: {
+                latitudeLongitudeId: latLing.latitudeLongitudeId,
               },
             },
 
@@ -123,9 +169,9 @@ export const userAddressRouter = createProtectedRouter()
       addressId: z.string().uuid(),
       line1: z.string(),
       line2: z.string().optional(),
-      city: z.string().uuid(),
-      state: z.string().uuid(),
-      country: z.string().uuid(),
+      city: z.string(),
+      state: z.string(),
+      country: z.string(),
       zipcode: z.string(),
       addressType: z.string(),
     }),
@@ -168,6 +214,32 @@ export const userAddressRouter = createProtectedRouter()
           });
         }
 
+        const city = await ctx.prisma.city.findFirst({
+          where: {
+            name: input.city,
+            State: {
+              identifier: input.state,
+              Country: {
+                code: input.country,
+              },
+            },
+          },
+        });
+
+        if (!city) {
+          throw throwTRPCError({
+            code: "BAD_REQUEST",
+            message: "City not found",
+          });
+        }
+
+        const latLing = await ctx.prisma.latitudeLongitude.findFirstOrThrow({
+          where: {
+            lat: 0,
+            long: 0,
+          },
+        });
+
         const address = await ctx.prisma.userAddress.update({
           where: {
             userAddressId: input.addressId,
@@ -177,14 +249,13 @@ export const userAddressRouter = createProtectedRouter()
             line2: input.line2,
             City: {
               connect: {
-                cityId: input.city,
+                cityId: city.cityId,
               },
             },
             // Add logic to get latting and longitude from address
             LatitudeLongitude: {
-              create: {
-                lat: 0,
-                long: 0,
+              connect: {
+                latitudeLongitudeId: latLing.latitudeLongitudeId,
               },
             },
             zipcode: input.zipcode,

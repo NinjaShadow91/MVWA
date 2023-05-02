@@ -12,7 +12,7 @@ const footerNavigation = {
   ],
   account: [
     { name: "Manage Account", href: `/user/manage` },
-    { name: "Orders", href: "/user/order/all" },
+    { name: "Orders", href: "/user/orders" },
   ],
   connect: [
     { name: "Contact Us", href: "#" },
@@ -35,7 +35,7 @@ export default function Footer() {
     e.preventDefault();
     trpcNewsletterSubscribe.mutate(email, {
       onSuccess: (data) => {
-        console.log(data);
+        // console.log(data);
         alert("You have successfully subscribed to our newsletter!");
       },
       onError: (err) => {

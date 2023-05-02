@@ -1474,6 +1474,8 @@ model ProductReview {
     createdAt                      DateTime                      @default(now())
     updatedAt                      DateTime                      @updatedAt
     deletedAt                      DateTime?
+
+    @@unique([productId, userId])
 }
 
 model ProductReviewTag {

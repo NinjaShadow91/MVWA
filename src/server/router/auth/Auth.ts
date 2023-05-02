@@ -217,7 +217,11 @@ export const authRouter = createRouter()
                       expires: new Date(new Date().getTime() + 10 * 60 * 1000),
                     },
                   });
-                  console.log(token);
+                  console.log(
+                    "http://localhost:3000/auth/forgot-password?token=".concat(
+                      token
+                    )
+                  );
                   // send mail to user.email, subject Password Reset and with link auth/forgot-password?token=  --token---
                 } catch (err) {
                   throw throwPrismaTRPCError({
@@ -467,8 +471,12 @@ export const authRouter = createRouter()
                     },
                   });
                   const host = ctx.req.headers.host ?? "";
-                  console.log(host.concat("?token=").concat(token));
-                  // send mail to user.email, subject Password Reset and with link auth/forgot-password?token=  --token---
+                  console.log("http://".concat(host));
+                  console.log(
+                    "http://".concat(
+                      host.concat("/auth/forgot-password?token=").concat(token)
+                    )
+                  );
                 } catch (err) {
                   throw throwPrismaTRPCError({
                     cause: err,

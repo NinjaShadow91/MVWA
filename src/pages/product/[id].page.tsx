@@ -2,6 +2,15 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { useRouter } from "next/router";
 import { ReactElement, useEffect, useState } from "react";
+
+import {
+  Dialog,
+  Disclosure,
+  Popover,
+  RadioGroup,
+  Tab,
+  Transition,
+} from "@headlessui/react";
 import {
   CheckIcon,
   StarIcon,
@@ -55,7 +64,7 @@ export default function ProductDescription() {
   trpc.useQuery(["product.getProductDetails", { productId }], {
     enabled: productId !== "",
     onSuccess: (data) => {
-      console.log(data);
+      // console.log(data);
       setProduct(data);
       setProductSKUId(data.ProductSKU[0]?.productSKUId ?? "");
       setStatus("loaded");
@@ -69,7 +78,7 @@ export default function ProductDescription() {
   trpc.useQuery(["product.review.protected.getProductReview", productId], {
     enabled: productId !== "",
     onSuccess: (data) => {
-      console.log(data);
+      // console.log(data);
       if (data) {
         setReviewId(data.productReviewId);
         setReviewContent(data.content);
@@ -95,7 +104,7 @@ export default function ProductDescription() {
     {
       enabled: productSKUId !== null,
       onSuccess: (data) => {
-        console.log(data);
+        // console.log(data);
         setProductInventories(data);
         // setStatus("loaded");
       },
@@ -122,7 +131,7 @@ export default function ProductDescription() {
   trpc.useQuery(["product.review.getProductOverallReview", productId], {
     enabled: productId !== "",
     onSuccess: (data) => {
-      console.log(data);
+      // console.log(data);
       setOverallReview(data);
       // setStatus("loaded");
     },
@@ -188,7 +197,7 @@ export default function ProductDescription() {
         setReviewContent("");
         setReviewRating(0);
         setReload(!reload);
-        console.log(data);
+        // console.log(data);
       },
       onError: (error) => {
         // alert("Something went wrong, cant delete review, please try again..");
@@ -197,7 +206,7 @@ export default function ProductDescription() {
   }
 
   function buyNow() {
-    console.log("buy now", product.ProductSKU[0].productInventoryIds[0]);
+    // console.log("buy now", product.ProductSKU[0].productInventoryIds[0]);
     trpcBuyNow.mutate(
       {
         productId: product.ProductSKU[0].productInventoryIds[0],
@@ -218,7 +227,7 @@ export default function ProductDescription() {
       },
       {
         onSuccess: (data) => {
-          console.log(data);
+          // console.log(data);
         },
         onError: (error) => {
           alert("Cant place order, please try again..");
@@ -264,11 +273,50 @@ export default function ProductDescription() {
   return (
     <div className="bg-gray-50">
       <Navbar></Navbar>
-      <main>
-        <div className="bg-white">
-          <div className="mx-auto max-w-2xl px-4 pt-16 pb-24 sm:px-6 sm:pt-24 sm:pb-32 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
-            {/* Product details */}
-            <div className="lg:max-w-lg lg:self-end">
+      <main className="mx-auto max-w-7xl sm:px-6 sm:pt-16 lg:px-8">
+        <div className="mx-auto max-w-2xl lg:max-w-none">
+          <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+            <Tab.Group as="div" className="flex flex-col-reverse">
+              {/* Image selector */}
+              <div className="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
+                <Tab.List className="grid grid-cols-5 gap-6">
+                  {product.Media.map((media) => (
+                    <Tab
+                      key={media.mediaId}
+                      className="relative flex h-24 cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4"
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className="sr-only"> {media.name} </span>
+                          <span className="absolute inset-0 overflow-hidden rounded-md">
+                            <Media
+                              key={media.mediaId}
+                              media={media.mediaId}
+                            ></Media>
+                          </span>
+                          <span
+                            className={classNames(
+                              selected ? "ring-indigo-500" : "ring-transparent",
+                              "pointer-events-none absolute inset-0 rounded-md ring-2 ring-offset-2"
+                            )}
+                            aria-hidden="true"
+                          />
+                        </>
+                      )}
+                    </Tab>
+                  ))}
+                </Tab.List>
+              </div>
+
+              <Tab.Panels className="aspect-w-1 aspect-h-1 w-full">
+                {product.Media.map((media) => (
+                  <Tab.Panel key={media.mediaId}>
+                    <Media key={media.mediaId} media={media.mediaId}></Media>
+                  </Tab.Panel>
+                ))}
+              </Tab.Panels>
+            </Tab.Group>
+            <div className="mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0">
               <div className="mt-4">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                   {product.name}
@@ -343,76 +391,70 @@ export default function ProductDescription() {
                   </div>
                 )}
               </section>
-            </div>
 
-            {/* Product image */}
-            <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
-              <div className="aspect-w-1 aspect-h-1 overflow-hidden rounded-lg">
-                {product.Media &&
-                  product.Media.length !== 0 &&
-                  // <Media media={product.Media[0].mediaId}></Media>
-                  product.Media.map((media) => (
-                    <Media key={media.mediaId} media={media.mediaId}></Media>
-                  ))}
+              {/* Product form */}
+              <div className="mt-10 lg:col-start-1 lg:row-start-2 lg:max-w-lg lg:self-start">
+                <section aria-labelledby="options-heading">
+                  <form>
+                    <div className="mt-10">
+                      <button
+                        onClick={() => {
+                          buyNow();
+                        }}
+                        type="button"
+                        className="flex w-full m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                      >
+                        Buy Now
+                      </button>
+                      <button
+                        onClick={() => {
+                          addToCart();
+                        }}
+                        type="button"
+                        className="flex w-full m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                      >
+                        Add to Cart
+                      </button>
+                      <button
+                        onClick={() => {
+                          saveForLatter();
+                        }}
+                        type="button"
+                        className="flex w-full  m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                      >
+                        Save For Later
+                      </button>
+                    </div>
+                  </form>
+                </section>
               </div>
-            </div>
-
-            {/* Product form */}
-            <div className="mt-10 lg:col-start-1 lg:row-start-2 lg:max-w-lg lg:self-start">
-              <section aria-labelledby="options-heading">
-                <form>
-                  <div className="mt-10">
-                    <button
-                      onClick={() => {
-                        buyNow();
-                      }}
-                      type="button"
-                      className="flex w-full m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    >
-                      Buy Now
-                    </button>
-                    <button
-                      onClick={() => {
-                        addToCart();
-                      }}
-                      type="button"
-                      className="flex w-full m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    >
-                      Add to Cart
-                    </button>
-                    <button
-                      onClick={() => {
-                        saveForLatter();
-                      }}
-                      type="button"
-                      className="flex w-full  m-5 items-center justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-8 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
-                    >
-                      Save For Later
-                    </button>
-                  </div>
-                </form>
-              </section>
             </div>
           </div>
         </div>
-
-        <div>
-          {product.Details && product.Details.length != 0 && (
-            <div className="mx-auto max-w-2xl px-4 py-24 sm:px-6 sm:py-32 lg:max-w-7xl lg:px-8">
+        {product.Details && product.Details.length != 0 && (
+          <div className="mx-auto max-w-2xl lg:max-w-none p-10 m-10">
+            <div>
+              <h2 className="text-2xl text-center font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Details
+              </h2>
+            </div>
+            <div>
               {/* Details section */}
               {product.Details.map((detail) => (
-                <section
+                <div
+                  className="flex flex-col text-center"
                   aria-labelledby="details-heading"
                   key={detail.productDetailId}
                 >
-                  <div className="flex flex-col items-center text-center">
+                  {/* <div className="flex flex-col text-center"> */}
+                  <div>
                     <h2
                       id="details-heading"
-                      className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl"
+                      className="text-2xl font-bold tracking-tight text-gray-900 sm:text-4xl text-center"
                     >
                       {detail.heading}
                     </h2>
-                    <p className="mt-3 max-w-3xl text-lg text-gray-600">
+                    <p className="text-lg text-gray-600 text-center">
                       {detail.description}
                     </p>
                     {/* {detail.Media &&
@@ -423,33 +465,86 @@ export default function ProductDescription() {
                           media={media.mediaId}
                         ></Media>
                       ))} */}
-                    {detail.Media && detail.Media.length !== 0 && (
-                      <Media
-                        key={detail.Media[0].mediaId}
-                        media={detail.Media[0].mediaId}
-                      ></Media>
+                    {detail.Media && detail.Media.length === 1 ? (
+                      <div>
+                        <Media media={detail.Media[0].mediaId}></Media>
+                      </div>
+                    ) : (
+                      <Tab.Group
+                        as="div"
+                        className="flex flex-col-reverse p-10 m-10"
+                      >
+                        {/* Image selector */}
+                        <div className="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
+                          <Tab.List className="grid grid-cols-5 gap-6">
+                            {detail.Media.map((media) => (
+                              <Tab
+                                key={media.mediaId}
+                                className="relative flex h-24 cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4"
+                              >
+                                {({ selected }) => (
+                                  <>
+                                    <span className="sr-only">
+                                      {" "}
+                                      {media.name}{" "}
+                                    </span>
+                                    <span className="absolute inset-0 overflow-hidden rounded-md">
+                                      <Media
+                                        key={media.mediaId}
+                                        media={media.mediaId}
+                                      ></Media>
+                                    </span>
+                                    <span
+                                      className={classNames(
+                                        selected
+                                          ? "ring-indigo-500"
+                                          : "ring-transparent",
+                                        "pointer-events-none absolute inset-0 rounded-md ring-2 ring-offset-2"
+                                      )}
+                                      aria-hidden="true"
+                                    />
+                                  </>
+                                )}
+                              </Tab>
+                            ))}
+                          </Tab.List>
+                        </div>
+
+                        <Tab.Panels className="aspect-w-1 aspect-h-1 w-full">
+                          {detail.Media.map((media) => (
+                            <Tab.Panel key={media.mediaId}>
+                              <Media
+                                key={media.mediaId}
+                                media={media.mediaId}
+                              ></Media>
+                            </Tab.Panel>
+                          ))}
+                        </Tab.Panels>
+                      </Tab.Group>
                     )}
                   </div>
-                </section>
+                </div>
               ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Policies section */}
-          {product.TechnicalDetails && product.TechnicalDetails.length != 0 && (
-            // <div className="mx-auto max-w-2xl px-4 py-24 sm:px-6 sm:py-32 lg:max-w-7xl lg:px-8">
-            <div className="mx-auto max-w-2xl px-4 py-2">
-              <section
-                aria-labelledby="policy-heading"
-                className="mt-16 lg:mt-24"
-              >
-                <h2
-                  id="technical-details-heading"
-                  className="text-3xl text-bold"
-                >
-                  Technical Details
-                </h2>
-                <table className="border-solid border-2 border-black-500">
+        {product.TechnicalDetails && product.TechnicalDetails.length != 0 && (
+          <section
+            aria-labelledby="policy-heading"
+            className="mt-16 lg:mt-24 p-5 m-5"
+          >
+            <div>
+              <h2 className="text-2xl text-center font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Technical Details
+              </h2>
+            </div>
+            {/* <div className="mx-auto p-5 m-10 max-w-2xl px-4 py-24 sm:px-6 sm:py-32 lg:max-w-7xl lg:px-8"> */}
+            <div>
+              {/* <div> */}
+              {/* <div className="mx-auto max-w-2xl px-4 py-2"> */}
+              <div className="min-w-full">
+                <table className="border-solid border-2 border-black-500 w-full">
                   <tr className="border-solid border-2 border-black-500">
                     <th>Detail</th>
                     <th>Value</th>
@@ -468,12 +563,12 @@ export default function ProductDescription() {
                     </tr>
                   ))}
                 </table>
-              </section>
+              </div>
             </div>
-          )}
-        </div>
+          </section>
+        )}
 
-        <section aria-labelledby="reviews-heading" className="bg-white">
+        <section aria-labelledby="reviews-heading" className="">
           <div className="mx-auto max-w-2xl py-24 px-4 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-12 lg:gap-x-8 lg:py-32 lg:px-8">
             <div className="lg:col-span-4">
               <h2

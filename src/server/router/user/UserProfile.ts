@@ -6,9 +6,9 @@ const userProfile = createProtectedRouter().mutation("updateProfile", {
   input: z.object({
     name: z.string(),
     bio: z.string().nullish(),
-    dob: z.string().nullish(),
-    gender: z.string().nullish(),
-    profilePicture: z.string().nullish(),
+    dob: z.date().nullish(),
+    gender: z.string().uuid().nullish(),
+    profilePicture: z.string().uuid().nullish(),
   }),
   resolve: async ({ ctx, input }) => {
     try {
@@ -47,11 +47,13 @@ const userProfile = createProtectedRouter().mutation("updateProfile", {
                 },
               }
             : undefined,
-          Gender: {
-            connect: {
-              name: input.gender ?? undefined,
-            },
-          },
+          Gender: input.gender
+            ? {
+                connect: {
+                  name: input.gender,
+                },
+              }
+            : undefined,
         },
       });
       return updatedUser;

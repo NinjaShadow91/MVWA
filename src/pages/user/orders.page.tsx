@@ -4,13 +4,12 @@ import {
   QuestionMarkCircleIcon,
   XMarkIcon as XMarkIconMini,
 } from "@heroicons/react/20/solid";
-import Navbar from "../../../components/Navbar";
-import Footer from "../../../components/Footer";
-import { trpc } from "../../../utils/trpc";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import { trpc } from "../../utils/trpc";
 import { useState } from "react";
-import { getOrderLink, getProductLink, Media } from "../../utils/utils";
+import { getOrderLink, getProductLink, Media } from "../utils/utils";
 import { useRouter } from "next/router";
-import { ProductRecommendationBasedOnPreviousOrders } from "../../../server/router/personalisation/BasedOnPreviousOrders";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -98,7 +97,7 @@ export default function UserOrders() {
                 orders.OrderItems.length !== 0 &&
                 orders.OrderItems.map((product) => (
                   <li key={product.id} className="flex py-6 sm:py-10">
-                    <div className="flex-shrink-0">
+                    <div className="w-2/5">
                       {productMediaPresent(product.productId) && (
                         <Media
                           media={getProductMediaId(product.productId, 0)}

@@ -46,11 +46,13 @@ export const Media = ({ media }: { media: string }) => {
       console.log(err);
     },
   });
+  console.log(media);
 
   return (
-    <Image
-      height={200}
-      width={200}
+    <img
+      // height={"200px"}
+      // width={"200px"}
+      // style={"height:200px,width:200px"}
       src={`http://localhost:8080/fileRetrieve?token=${media}`}
       alt={altText}
       className="h-full w-full object-cover object-center"

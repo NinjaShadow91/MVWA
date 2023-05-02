@@ -11,12 +11,90 @@ function classNames(...classes: any) {
 export default function UserManage() {
   const user = useSession();
   const [status, setStatus] = useState(1);
-  // const [status, setStatus] = useState(0);
+  const [reload, setReload] = useState(false);
   const [profile, setProfile] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<any | null>(null);
   const [notificationProfile, setNotificationProfile] = useState<any | null>(
     null
   );
+  const [name, setName] = useState("");
+  const [about, setAbout] = useState("");
+
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [zipcode, setZipcode] = useState("");
+  const [line1, setLine1] = useState("");
+
+  const tprcUpdateProfile = trpc.useMutation([
+    "user.profile.self.updateProfile",
+  ]);
+
+  const tprcUpdateAddress = trpc.useMutation(["user.address.updateAddress"]);
+  const trpcAddAddress = trpc.useMutation(["user.address.addAddress"]);
+  function updateProfile() {
+    tprcUpdateProfile.mutate(
+      {
+        name: name,
+        bio: about,
+      },
+
+      {
+        onSuccess: (data) => {
+          alert("Sucessfully upadated profile");
+        },
+        onError: (error) => {
+          alert("Something went wrong");
+          console.log(error);
+        },
+      }
+    );
+  }
+
+  function updateAddress() {
+    if (addresses && addresses.length > 0) {
+      tprcUpdateAddress.mutate(
+        {
+          addressId: addresses[0].userAddressId,
+          line1: line1,
+          city: city,
+          state: state,
+          country: getCountryCode(country),
+          zipcode: zipcode,
+          addressType: "REGULAR",
+        },
+        {
+          onSuccess: (data) => {
+            alert("Sucessfully upadated address");
+          },
+          onError: (error) => {
+            alert("Something went wrong");
+            console.log(error);
+          },
+        }
+      );
+    } else {
+      trpcAddAddress.mutate(
+        {
+          line1: line1,
+          city: city,
+          state: state,
+          country: getCountryCode(country),
+          zipcode: zipcode,
+          addressType: "REGULAR",
+        },
+        {
+          onSuccess: (data) => {
+            alert("Sucessfully upadated address");
+          },
+          onError: (error) => {
+            alert("Something went wrong");
+            console.log(error);
+          },
+        }
+      );
+    }
+  }
 
   trpc.useQuery(
     ["user.profile.getUserProfile", { userId: user.data?.user?.id }],
@@ -24,7 +102,10 @@ export default function UserManage() {
       enabled: !!user.data?.user?.id,
       onSuccess: (data) => {
         setProfile(data);
+        setName(data?.name);
+        setAbout(data?.bio ?? "");
         setStatus(status + 1);
+        setReload(!reload);
       },
       onError: (error) => {
         setStatus(-10);
@@ -38,7 +119,13 @@ export default function UserManage() {
     onSuccess: (data) => {
       console.log(data);
       setAddresses(data);
+      setLine1(data[0]?.line1 ?? "");
+      setCity(data[0]?.City.name ?? "");
+      setState(data[0]?.City.State.identifier ?? "");
+      setCountry(getCountry(data[0]?.City.State.Country.code ?? ""));
+      setZipcode(data[0]?.zipcode ?? "");
       setStatus(status + 1);
+      setReload(!reload);
     },
     onError: (error) => {
       setStatus(-10);
@@ -52,6 +139,7 @@ export default function UserManage() {
       console.log(data);
       setNotificationProfile(data);
       setStatus(status + 1);
+      setReload(!reload);
     },
     onError: (error) => {
       setStatus(-10);
@@ -59,16 +147,23 @@ export default function UserManage() {
     },
   });
 
-  // if (status !== 3) {
-  //   return <div>Loading...</div>;
-  // }
+  function getCountry(code: string) {
+    if (code === "IN") return "India";
+    else return "Other";
+  }
 
+  function getCountryCode(name: string) {
+    if (name === "India") return "IN";
+    else return "OTHER";
+  }
+
+  if (status > 0 && status < 3) return <div>Loading</div>;
   return (
     <div className="flex flex-col min-h-screen justify-around overflow-hidden">
       <Navbar></Navbar>
       <div className="lg:grid lg:grid-cols-9 lg:gap-x-5 lg:p-5 lg:m-10">
         <div className="space-y-6 sm:px-6 lg:col-span-9 lg:px-0">
-          <form action="#" method="POST">
+          <form>
             <div className="shadow sm:overflow-hidden sm:rounded-md">
               <div className="space-y-6 bg-white py-6 px-4 sm:p-6">
                 <div>
@@ -94,7 +189,8 @@ export default function UserManage() {
                         type="text"
                         name="username"
                         id="username"
-                        defaultValue={profile?.name}
+                        defaultValue={name}
+                        onChange={(e) => setName(e.target.value)}
                         autoComplete="username"
                         className="block w-full min-w-0 flex-grow rounded-none rounded-r-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       />
@@ -115,7 +211,8 @@ export default function UserManage() {
                         rows={3}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         placeholder="About you"
-                        defaultValue={profile?.bio}
+                        defaultValue={about}
+                        onChange={(e) => setAbout(e.target.value)}
                       />
                     </div>
                     <p className="mt-2 text-sm text-gray-500">
@@ -149,7 +246,7 @@ export default function UserManage() {
               </div>
               <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                 <button
-                  type="submit"
+                  type="button"
                   onClick={() => updateProfile()}
                   className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
@@ -159,7 +256,7 @@ export default function UserManage() {
             </div>
           </form>
 
-          <form action="#" method="POST">
+          <form>
             <div className="shadow sm:overflow-hidden sm:rounded-md">
               <div className="space-y-6 bg-white py-6 px-4 sm:p-6">
                 <div>
@@ -184,6 +281,7 @@ export default function UserManage() {
                       disabled
                       name="email-address"
                       id="email-address"
+                      defaultValue={user.data?.user.email}
                       autoComplete="email"
                       className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm disabled:opacity-50"
                     />
@@ -201,6 +299,7 @@ export default function UserManage() {
                       name="phone-number"
                       id="phone-number"
                       autoComplete="phone"
+                      // value={}
                       className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm disabled:opacity-50"
                     />
                   </div>
@@ -216,12 +315,16 @@ export default function UserManage() {
                       id="country"
                       name="country"
                       autoComplete="country-name"
+                      defaultValue={country}
+                      onChange={(e) => {
+                        setCountry(e.target.value);
+                      }}
                       className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                     >
-                      <option>India</option>
-                      <option>United States</option>
-                      <option>Canada</option>
-                      <option>UK</option>
+                      <option value={"India"}>India</option>
+                      <option value={"US"}>United States</option>
+                      <option value={"CA"}>Canada</option>
+                      <option value={"UK"}>UK</option>
                     </select>
                   </div>
 
@@ -237,6 +340,8 @@ export default function UserManage() {
                       name="street-address"
                       id="street-address"
                       autoComplete="street-address"
+                      defaultValue={line1}
+                      onChange={(e) => setLine1(e.target.value)}
                       className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                     />
                   </div>
@@ -252,6 +357,8 @@ export default function UserManage() {
                       type="text"
                       name="city"
                       id="city"
+                      defaultValue={city}
+                      onChange={(e) => setCity(e.target.value)}
                       autoComplete="address-level2"
                       className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                     />
@@ -269,6 +376,8 @@ export default function UserManage() {
                       name="region"
                       id="region"
                       autoComplete="address-level1"
+                      defaultValue={state}
+                      onChange={(e) => setState(e.target.value)}
                       className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                     />
                   </div>
@@ -285,6 +394,8 @@ export default function UserManage() {
                       name="postal-code"
                       id="postal-code"
                       autoComplete="postal-code"
+                      defaultValue={zipcode}
+                      onChange={(e) => setZipcode(e.target.value)}
                       className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                     />
                   </div>
@@ -293,7 +404,7 @@ export default function UserManage() {
               <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                 <button
                   onClick={() => updateAddress()}
-                  type="submit"
+                  type="button"
                   className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   Save
@@ -302,7 +413,7 @@ export default function UserManage() {
             </div>
           </form>
 
-          <form action="#" method="POST">
+          {/* <form>
             <div className="shadow sm:overflow-hidden sm:rounded-md">
               <div className="space-y-6 bg-white py-6 px-4 sm:p-6">
                 <div>
@@ -465,7 +576,7 @@ export default function UserManage() {
               </div>
               <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
                 <button
-                  type="submit"
+                  type="button"
                   onClick={() => updateNotification()}
                   className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
                 >
@@ -473,7 +584,7 @@ export default function UserManage() {
                 </button>
               </div>
             </div>
-          </form>
+          </form> */}
         </div>
       </div>
       <Footer></Footer>

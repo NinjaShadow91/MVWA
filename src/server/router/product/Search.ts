@@ -8,7 +8,7 @@ export const productSearchRouter = createRouter()
     async resolve({ ctx, input }) {
       try {
         return await ctx.prisma.$queryRawUnsafe(
-          `select "public"."Product"."productId", name, description from "public"."Product" where position('${input}' in "public"."Product"."name")>0`
+          `select "public"."Product"."productId", name, description from "public"."Product" where position('${input}' in "public"."Product"."name")>0;`
         );
       } catch (err) {
         throw throwPrismaTRPCError({

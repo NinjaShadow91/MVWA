@@ -26,8 +26,8 @@ export default function SearchPage() {
     }
   }, [router]);
 
-  trpc.useQuery(["product.search.searchProduct", { query: searchQuery }], {
-    // trpc.useQuery(["product.search.searchProductv1", searchQuery], {
+  // trpc.useQuery(["product.search.searchProduct", { query: searchQuery }], {
+  trpc.useQuery(["product.search.searchProductv1", searchQuery], {
     enabled: !!searchQuery,
     onSuccess: (data) => {
       setProducts(data);

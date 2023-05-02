@@ -163,7 +163,7 @@ export default function UserCart() {
       {
         onSuccess: (data) => {
           console.log(data);
-          router.push("/user/order/all");
+          router.push("/user/orders");
         },
         onError: (err) => {
           console.log(err);
@@ -199,7 +199,8 @@ export default function UserCart() {
                 products.length !== 0 &&
                 products.map((product) => (
                   <li key={product.productSKUId} className="flex py-6 sm:py-10">
-                    <div className="flex-shrink-0">
+                    {/* <div className="flex-shrink-0"> */}
+                    <div className="w-2/5">
                       {product.Media && product.Media.length !== 0 && (
                         <Media media={product.Media[0].mediaId}></Media>
                       )}
