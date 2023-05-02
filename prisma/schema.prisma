@@ -4,7 +4,8 @@ datasource db {
 }
 
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
+    previewFeatures = ["fullTextSearch"]
 }
 
 generator erd {
@@ -13,49 +14,89 @@ generator erd {
     includeRelationFromFields = true
 }
 
+// main model
 model User {
-    id                             String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     name                           String
-    email                          String                          @unique
+    email                          String    @unique
     emailVerified                  DateTime?
     image                          String?
-    Profile                        UserProfile?
-    Contacts                       UserContact[]
-    Addresses                      UserAddress[]
-    ProductReviews                 ProductReview[]
-    StoreReviews                   StoreReview[]
-    Stores                         Store[]
-    StoreComplaints                StoreComplaint[]
-    ProductWrongInformationReports ProductWrongInformationReport[]
-    Complaints                     Complaint[]
-    ProductQuestions               ProductQuestion[]
-    ProductAnswers                 ProductAnswer[]
-    Cart                           Cart?
-    SavedForLaterProducts          SavedForLaterProducts?
-    Orders                         Orders?
-    Wishlists                      Wishlist[]
-    OthersWishlist                 Wishlist[]                      @relation("othersWishlist")
-    UserAction                     UserAction[]
-    userTypeUserTypeId             String?                         @db.Uuid
-    UserType                       UserType?                       @relation(fields: [userTypeUserTypeId], references: [userTypeId])
+    profile                        String?   @unique @db.Uuid
+    contacts                       String[]  @db.Uuid
+    addresses                      String[]  @db.Uuid
+    productReviews                 String[]  @db.Uuid
+    storeReviews                   String[]  @db.Uuid
+    stores                         String[]  @db.Uuid
+    storeComplaints                String[]  @db.Uuid
+    productWrongInformationReports String[]  @db.Uuid
+    complaints                     String[]  @db.Uuid
+    productQuestions               String[]  @db.Uuid
+    productAnswers                 String[]  @db.Uuid
+    cart                           String?   @unique @db.Uuid
+    savedForLaterProducts          String?   @unique @db.Uuid
+    orders                         String?   @unique @db.Uuid
+    wishlists                      String[]  @db.Uuid
+    othersWishlist                 String[]  @db.Uuid
+    userAction                     String[]  @db.Uuid
+    userNotificationProfile        String?   @db.Uuid
+    userOrderRecieversId           String?   @db.Uuid
+    userTypeUserTypeId             String    @db.Uuid
+    UserType                       UserType  @relation(fields: [userTypeUserTypeId], references: [userTypeId])
 
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
     deletedAt DateTime?
 
-    UserAuthentication UserAuthentication?
+    userAuthentication String?   @db.Uuid
     accounts           Account[]
     sessions           Session[]
 }
 
-model UserType {
-    userTypeId                         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name                               String            @unique
-    Users                              User[]
-    OfferForUserType                   OfferForUserType? @relation(fields: [offerForUserTypeOfferForUserTypeId], references: [offerForUserTypeId])
-    offerForUserTypeOfferForUserTypeId String?           @db.Uuid
+model Account {
+    id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    userId            String    @db.Uuid
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String?   @db.Text
+    access_token      String?   @db.Text
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String?   @db.Text
+    session_state     String?
+    user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+    deletedAt         DateTime?
+
+    @@unique([provider, providerAccountId])
 }
 
+model Session {
+    id           String   @id @default(cuid())
+    sessionToken String   @unique
+    userId       String   @db.Uuid
+    expires      DateTime
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    machineIdentifier    String?
+    UserAuthentication   UserAuthentication? @relation(fields: [userAuthenticationId], references: [userAuthenticationId])
+    userAuthenticationId String?             @db.Uuid
+    createdAt            DateTime            @default(now())
+    updatedAt            DateTime            @updatedAt
+    deletedAt            DateTime?
+}
+
+model UserType {
+    userTypeId         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name               String            @unique
+    Users              User[]
+    OfferFor           OfferForUserType? @relation(fields: [offerForUserTypeId], references: [offerForUserTypeId])
+    offerForUserTypeId String?           @db.Uuid
+}
+
+// Auth service 
 model UserAuthentication {
     userAuthenticationId String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     userId               String             @unique @db.Uuid
@@ -63,12 +104,9 @@ model UserAuthentication {
     email                String             @unique
     emailVerified        DateTime?
     imageId              String?            @db.Uuid
-    Image                Media?             @relation(fields: [imageId], references: [mediaId])
-    User                 User               @relation(fields: [userId], references: [id])
-    emailVerifiedAt      DateTime?
-    currentpasswordId    String             @unique @db.Uuid
-    CurrentPassword      Password           @relation(fields: [currentpasswordId], references: [passwordId])
-    PasswordHistory      PasswordHistory[]
+    currentPasswordId    String             @unique @db.Uuid
+    CurrentPassword      Password           @relation(fields: [currentPasswordId], references: [passwordId])
+    PasswordHistory      PasswordHistory?
     SecurityQuestions    SecurityQuestion[]
     Session              Session[]
     // userDevices UserDevice[]
@@ -80,10 +118,20 @@ model UserAuthentication {
     deletedAt            DateTime?
 }
 
+model VerificationToken {
+    identifier String
+    type       String
+    token      String    @id
+    expires    DateTime
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+    deletedAt  DateTime?
+}
+
 model PasswordHistory {
     passwordHistoryId    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    password             Password[]
-    userAuthenticationId String             @db.Uuid
+    Password             Password[]
+    userAuthenticationId String             @unique @db.Uuid
     UserAuthentication   UserAuthentication @relation(fields: [userAuthenticationId], references: [userAuthenticationId])
     createdAt            DateTime           @default(now())
     updatedAt            DateTime           @updatedAt
@@ -131,16 +179,16 @@ model SecurityQuestion {
     deletedAt            DateTime?
 }
 
+// user profile service
 model UserProfile {
     userProfileId    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     /// Set some max length limit
     name             String
     dob              DateTime?
     bio              String?
-    profilePictureId String?         @db.Uuid
+    profilePictureId String?         @unique @db.Uuid
     ProfilePicture   ProfilePicture? @relation(fields: [profilePictureId], references: [profilePictureId])
     userId           String          @unique @db.Uuid
-    User             User            @relation(fields: [userId], references: [id])
     genderId         String?         @db.Uuid
     Gender           Gender?         @relation(fields: [genderId], references: [id])
     createdAt        DateTime        @default(now())
@@ -149,14 +197,107 @@ model UserProfile {
 }
 
 model ProfilePicture {
-    profilePictureId String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    Media            Media         @relation(fields: [mediaId], references: [mediaId])
-    mediaId          String        @db.Uuid
-    type             String
-    UserProfile      UserProfile[]
-    createdAt        DateTime      @default(now())
-    updatedAt        DateTime      @updatedAt
+    profilePictureId String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    mediaId          String       @unique @db.Uuid
+    UserProfile      UserProfile?
+    createdAt        DateTime     @default(now())
+    updatedAt        DateTime     @updatedAt
     deletedAt        DateTime?
+}
+
+model UserNotificationProfile {
+    userNotificationProfileId String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    userId                    String                       @unique @db.Uuid
+    Preferences               UserNotificationPreference[]
+    createdAt                 DateTime                     @default(now())
+    updatedAt                 DateTime                     @updatedAt
+    deletedAt                 DateTime?
+}
+
+model UserNotificationPreference {
+    userNotificationId                String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    // mail, number ,etc
+    NotificationType                  UserNotificationPreferenceType  @relation(fields: [userNotificationPreferenceTypeId], references: [id])
+    // Can be different levels
+    PreferenceLevel                   UserNotificationPreferenceLevel @relation(fields: [userNotificationPreferenceLevelId], references: [id])
+    createdAt                         DateTime                        @default(now())
+    updatedAt                         DateTime                        @updatedAt
+    deletedAt                         DateTime?
+    UserNotificationProfile           UserNotificationProfile?        @relation(fields: [userNotificationProfileId], references: [userNotificationProfileId])
+    userNotificationProfileId         String?                         @db.Uuid
+    userNotificationPreferenceTypeId  String                          @db.Uuid
+    userNotificationPreferenceLevelId String                          @db.Uuid
+}
+
+model UserNotificationPreferenceType {
+    id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                       String                       @unique
+    createdAt                  DateTime                     @default(now())
+    updatedAt                  DateTime                     @updatedAt
+    deletedAt                  DateTime?
+    UserNotificationPreference UserNotificationPreference[]
+}
+
+model UserNotificationPreferenceLevel {
+    id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    level                      Int                          @unique
+    Events                     UserNotificationEvents[]
+    createdAt                  DateTime                     @default(now())
+    updatedAt                  DateTime                     @updatedAt
+    deletedAt                  DateTime?
+    UserNotificationPreference UserNotificationPreference[]
+}
+
+// added something to cart, bought something , somrthong back in stock, price decreased, etc
+model UserNotificationEvents {
+    id                                String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                              String                           @unique
+    createdAt                         DateTime                         @default(now())
+    updatedAt                         DateTime                         @updatedAt
+    deletedAt                         DateTime?
+    UserNotificationPreferenceLevel   UserNotificationPreferenceLevel? @relation(fields: [userNotificationPreferenceLevelId], references: [id])
+    userNotificationPreferenceLevelId String?                          @db.Uuid
+}
+
+model UserOrderRecievers {
+    userOrderRecieversId String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    UserOrderRecievers   UserOrderReciever[]
+    userId               String              @unique @db.Uuid
+    createdAt            DateTime            @default(now())
+    updatedAt            DateTime            @updatedAt
+    deletedAt            DateTime?
+}
+
+model UserOrderReciever {
+    userOrderRecieverId                    String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                                   String
+    Contacts                               UserOrderRecieverContact[]
+    createdAt                              DateTime                   @default(now())
+    updatedAt                              DateTime                   @updatedAt
+    deletedAt                              DateTime?
+    UserOrderRecievers                     UserOrderRecievers?        @relation(fields: [userOrderRecieversUserOrderRecieversId], references: [userOrderRecieversId])
+    userOrderRecieversUserOrderRecieversId String?                    @db.Uuid
+}
+
+model UserOrderRecieverContact {
+    userOrderRecieverContactId     String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    contact                        String
+    ContactType                    UserOrderRecieverContactType @relation(fields: [userOrderRecieverContactTypeId], references: [id])
+    userOrderRecieverContactTypeId String                       @db.Uuid
+    createdAt                      DateTime                     @default(now())
+    updatedAt                      DateTime                     @updatedAt
+    deletedAt                      DateTime?
+    UserOrderReciever              UserOrderReciever?           @relation(fields: [userOrderRecieverId], references: [userOrderRecieverId])
+    userOrderRecieverId            String?                      @db.Uuid
+}
+
+model UserOrderRecieverContactType {
+    id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                     String                     @unique
+    createdAt                DateTime                   @default(now())
+    updatedAt                DateTime                   @updatedAt
+    deletedAt                DateTime?
+    UserOrderRecieverContact UserOrderRecieverContact[]
 }
 
 model Gender {
@@ -168,25 +309,22 @@ model Gender {
     deletedAt    DateTime?
 }
 
+// user address service
 model UserAddress {
-    userAddressId         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    line1                 String
-    line2                 String?           @default("")
-    zipcode               String
-    cityId                String            @db.Uuid
-    City                  City              @relation(fields: [cityId], references: [id])
-    latitudeLongitudeId   String            @db.Uuid
-    LatitudeLongitude     LatitudeLongitude @relation(fields: [latitudeLongitudeId], references: [latitudeLongitudeId])
-    User                  User?             @relation(fields: [userInformationUserId], references: [id])
-    userInformationUserId String?           @db.Uuid
-    AddressType           UserAddressType?  @relation(fields: [userAddressTypeId], references: [userAddressTypeId])
-    userAddressTypeId     String?           @db.Uuid
-    Employee              Employee[]
-    createdAt             DateTime          @default(now())
-    updatedAt             DateTime          @updatedAt
-    deletedAt             DateTime?
-    OfferForRegion        OfferForRegion?   @relation(fields: [offerForRegionId], references: [offerForRegionId])
-    offerForRegionId      String?           @db.Uuid
+    userAddressId       String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    line1               String
+    line2               String?           @default("")
+    zipcode             String
+    cityId              String            @db.Uuid
+    City                City              @relation(fields: [cityId], references: [cityId])
+    latitudeLongitudeId String            @db.Uuid
+    LatitudeLongitude   LatitudeLongitude @relation(fields: [latitudeLongitudeId], references: [latitudeLongitudeId])
+    userId              String?           @db.Uuid
+    AddressType         UserAddressType?  @relation(fields: [userAddressTypeId], references: [userAddressTypeId])
+    userAddressTypeId   String?           @db.Uuid
+    createdAt           DateTime          @default(now())
+    updatedAt           DateTime          @updatedAt
+    deletedAt           DateTime?
 }
 
 /// Address type can be home, office, billing, contact, etc.
@@ -199,62 +337,60 @@ model UserAddressType {
     deletedAt         DateTime?
 }
 
-model Account {
-    id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    userId            String    @db.Uuid
-    type              String
-    provider          String
-    providerAccountId String
-    refresh_token     String?   @db.Text
-    access_token      String?   @db.Text
-    expires_at        Int?
-    token_type        String?
-    scope             String?
-    id_token          String?   @db.Text
-    session_state     String?
-    user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    createdAt         DateTime  @default(now())
-    updatedAt         DateTime  @updatedAt
-    deletedAt         DateTime?
-
-    @@unique([provider, providerAccountId])
-}
-
-model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String   @db.Uuid
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    machineIdentifier    String?
-    UserAuthentication   UserAuthentication? @relation(fields: [userAuthenticationId], references: [userAuthenticationId])
-    userAuthenticationId String?             @db.Uuid
-    createdAt            DateTime            @default(now())
-    updatedAt            DateTime            @updatedAt
-    deletedAt            DateTime?
-}
+// Complaint service
 
 model Complaint {
     complaintId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     userId      String    @db.Uuid
-    User        User      @relation(fields: [userId], references: [id])
     message     String
     createdAt   DateTime  @default(now())
     updatedAt   DateTime  @updatedAt
     deletedAt   DateTime?
 }
 
+model StoreComplaint {
+    storeComplaintId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    userId           String    @db.Uuid
+    message          String
+    storeStoreId     String?   @db.Uuid
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
+    deletedAt        DateTime?
+}
+
+model ProductWrongInformationReportsCombinedResult {
+    productWrongInformationReportsOverallId String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    productId                               String                          @unique @db.Uuid
+    count                                   Int
+    ProductWrongInformationReports          ProductWrongInformationReport[]
+    createdAt                               DateTime                        @default(now())
+    updatedAt                               DateTime                        @updatedAt
+    deletedAt                               DateTime?
+}
+
+model ProductWrongInformationReport {
+    productWrongInformationReportId                String                                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                                           String
+    message                                        String
+    userId                                         String                                        @db.Uuid
+    productWrongInformationReportsCombinedResultId String?                                       @db.Uuid
+    ProductWrongInformationReportsCombinedResult   ProductWrongInformationReportsCombinedResult? @relation(fields: [productWrongInformationReportsCombinedResultId], references: [productWrongInformationReportsOverallId])
+    productProductId                               String?                                       @db.Uuid
+    createdAt                                      DateTime                                      @default(now())
+    updatedAt                                      DateTime                                      @updatedAt
+    deletedAt                                      DateTime?
+}
+
+// user contact service
 model UserContact {
-    userContactId         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    contact               String
-    User                  User?            @relation(fields: [userInformationUserId], references: [id])
-    userInformationUserId String?          @db.Uuid
-    ContactType           UserContactType? @relation(fields: [contactTypeId], references: [id])
-    contactTypeId         String?          @db.Uuid
-    createdAt             DateTime         @default(now())
-    updatedAt             DateTime         @updatedAt
-    deletedAt             DateTime?
+    userContactId String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    contact       String
+    userId        String          @db.Uuid
+    ContactType   UserContactType @relation(fields: [contactTypeId], references: [id])
+    contactTypeId String          @db.Uuid
+    createdAt     DateTime        @default(now())
+    updatedAt     DateTime        @updatedAt
+    deletedAt     DateTime?
 }
 
 /// Types can be primary email, secondary email, primary phone, secondary phone, twitter, etc.
@@ -267,9 +403,9 @@ model UserContactType {
     deletedAt   DateTime?
 }
 
+// Cart service
 model Cart {
     cartId    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    user      User       @relation(fields: [userId], references: [id])
     userId    String     @unique @db.Uuid
     Items     CartItem[]
     createdAt DateTime   @default(now())
@@ -281,7 +417,6 @@ model CartItem {
     cartItemId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     cartId     String    @db.Uuid
     Cart       Cart      @relation(fields: [cartId], references: [cartId])
-    Product    Product   @relation(fields: [productId], references: [productId])
     productId  String    @db.Uuid
     quantity   Int
     createdAt  DateTime  @default(now())
@@ -289,25 +424,29 @@ model CartItem {
     deletedAt  DateTime?
 }
 
+// Saved for latter service
 model SavedForLaterProducts {
     savedForLaterProductsId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    User                    User      @relation(fields: [userId], references: [id])
     userId                  String    @unique @db.Uuid
-    Product                 Product[]
+    products                String[]  @db.Uuid
     createdAt               DateTime  @default(now())
     updatedAt               DateTime  @updatedAt
     deletedAt               DateTime?
 }
 
+// Wishlist service
+
 model Wishlist {
-    wishlistId      String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    Products        WishlistItem[]
-    AuthorizedUsers User[]         @relation("othersWishlist")
-    createdAt       DateTime       @default(now())
-    updatedAt       DateTime       @updatedAt
-    deletedAt       DateTime?
-    User            User?          @relation(fields: [userId], references: [id])
-    userId          String?        @db.Uuid
+    wishlistId        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name              String
+    description       String
+    WishlistAddresses WishlistAddress[]
+    Products          WishlistItem[]
+    authorizedUserIds String[]          @db.Uuid
+    createdAt         DateTime          @default(now())
+    updatedAt         DateTime          @updatedAt
+    deletedAt         DateTime?
+    userId            String?           @db.Uuid
 }
 
 model WishlistItem {
@@ -315,7 +454,6 @@ model WishlistItem {
     wishlistId           String             @db.Uuid
     Wishlist             Wishlist           @relation(fields: [wishlistId], references: [wishlistId])
     productId            String             @db.Uuid
-    Product              Product            @relation(fields: [productId], references: [productId])
     wishlistItemStatusId String             @db.Uuid
     Status               WishlistItemStatus @relation(fields: [wishlistItemStatusId], references: [wishlistItemStatusId])
     createdAt            DateTime           @default(now())
@@ -326,15 +464,42 @@ model WishlistItem {
 model WishlistItemStatus {
     wishlistItemStatusId String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     WishlistItem         WishlistItem[]
-    status               String
+    status               String         @unique
     createdAt            DateTime       @default(now())
     updatedAt            DateTime       @updatedAt
     deletedAt            DateTime?
 }
 
+model WishlistAddress {
+    wishlistAddressId     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    line1                 String
+    line2                 String?             @default("")
+    zipcode               String
+    cityId                String              @db.Uuid
+    City                  City                @relation(fields: [cityId], references: [cityId])
+    latitudeLongitudeId   String              @db.Uuid
+    LatitudeLongitude     LatitudeLongitude   @relation(fields: [latitudeLongitudeId], references: [latitudeLongitudeId])
+    AddressType           WishlistAddressType @relation(fields: [wishlistAddressTypeId], references: [wishlistAddressTypeId])
+    wishlistAddressTypeId String              @db.Uuid
+    createdAt             DateTime            @default(now())
+    updatedAt             DateTime            @updatedAt
+    deletedAt             DateTime?
+    Wishlist              Wishlist[]
+}
+
+model WishlistAddressType {
+    wishlistAddressTypeId String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                  String            @unique
+    createdAt             DateTime          @default(now())
+    updatedAt             DateTime          @updatedAt
+    deletedAt             DateTime?
+    WishlistAddress       WishlistAddress[]
+}
+
+// Order service
+
 model Orders {
-    orderId    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    User       User        @relation(fields: [userId], references: [id])
+    ordersId   String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     userId     String      @unique @db.Uuid
     OrderItems OrderItem[]
     createdAt  DateTime    @default(now())
@@ -343,79 +508,140 @@ model Orders {
 }
 
 model OrderItem {
-    orderItemId     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    orderId         String            @db.Uuid
-    Order           Orders            @relation(fields: [orderId], references: [orderId])
-    Product         Product           @relation(fields: [productId], references: [productId])
-    productId       String            @db.Uuid
-    quantity        Int
-    OrderStatus     OrderStatus       @relation(fields: [orderStatusId], references: [orderStatusId])
-    orderStatusId   String            @db.Uuid
-    Payment         Payment[]
-    createdAt       DateTime          @default(now())
-    updatedAt       DateTime          @updatedAt
+    orderItemId          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    ordersId             String           @db.Uuid
+    Order                Orders           @relation(fields: [ordersId], references: [ordersId])
+    productId            String           @db.Uuid
+    DeliveryAddress      OrderAddress     @relation(fields: [orderAddressId], references: [orderAddressId])
+    User                 OrderUser        @relation(fields: [orderUserOrderUserId], references: [orderUserId])
+    orderUserOrderUserId String           @unique @db.Uuid
+    Reciever             OrderReciever    @relation(fields: [orderRecieverId], references: [orderRecieverId])
+    orderRecieverId      String           @unique @db.Uuid
+    amount               Float
+    quantity             Int
+    OrderStatus          OrderStatus      @relation(fields: [orderStatusId], references: [orderStatusId])
+    orderStatusId        String           @db.Uuid
+    Payment              Payment[]
+    createdAt            DateTime         @default(now())
+    updatedAt            DateTime         @updatedAt
+    deletedAt            DateTime?
+    DeliveryTracker      DeliveryTracker?
+    orderAddressId       String           @db.Uuid
+}
+
+model OrderUser {
+    orderUserId String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name        String
+    email       String
+    // Add other info as required according to laws
+    OrderItem   OrderItem?
+    // Contact     OrderUserContact[]
+    Contact     String
+}
+
+// model OrderUserContact {
+//     userOrderRecieverContactId String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//     contact                    String
+//     ContactType                OrderUserContactType @relation(fields: [orderUserContactTypeId], references: [orderUserContactTypeId])
+//     orderUserContactTypeId     String               @db.Uuid
+//     createdAt                  DateTime             @default(now())
+//     updatedAt                  DateTime             @updatedAt
+//     deletedAt                  DateTime?
+//     OrderUser                  OrderUser            @relation(fields: [orderUserId], references: [orderUserId])
+//     orderUserId                String               @db.Uuid
+// }
+
+// model OrderUserContactType {
+//     orderUserContactTypeId String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//     name                   String             @unique
+//     createdAt              DateTime           @default(now())
+//     updatedAt              DateTime           @updatedAt
+//     deletedAt              DateTime?
+//     OrderRecieverContact   OrderUserContact[]
+// }
+
+model OrderReciever {
+    orderRecieverId String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name            String
+    // Contacts        OrderRecieverContact[]
+    Contact         String
+    createdAt       DateTime   @default(now())
+    updatedAt       DateTime   @updatedAt
     deletedAt       DateTime?
-    DeliveryTracker DeliveryTracker[]
+    OrderItem       OrderItem?
+}
+
+// model OrderRecieverContact {
+//     userOrderRecieverContactId String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//     contact                    String
+//     orderRecieverContactType   OrderRecieverContactType @relation(fields: [orderRecieverContactTypeId], references: [orderRecieverContactTypeId])
+//     orderRecieverContactTypeId String                   @db.Uuid
+//     createdAt                  DateTime                 @default(now())
+//     updatedAt                  DateTime                 @updatedAt
+//     deletedAt                  DateTime?
+//     OrderReciever              OrderReciever?           @relation(fields: [orderRecieverId], references: [orderRecieverId])
+//     orderRecieverId            String?                  @db.Uuid
+// }
+
+// model OrderRecieverContactType {
+//     orderRecieverContactTypeId String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//     name                       String                 @unique
+//     createdAt                  DateTime               @default(now())
+//     updatedAt                  DateTime               @updatedAt
+//     deletedAt                  DateTime?
+//     OrderRecieverContact       OrderRecieverContact[]
+// }
+
+model OrderAddress {
+    orderAddressId      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    line1               String
+    line2               String?           @default("")
+    zipcode             String
+    cityId              String            @db.Uuid
+    City                City              @relation(fields: [cityId], references: [cityId])
+    latitudeLongitudeId String            @db.Uuid
+    LatitudeLongitude   LatitudeLongitude @relation(fields: [latitudeLongitudeId], references: [latitudeLongitudeId])
+    AddressType         OrderAddressType  @relation(fields: [orderAddressTypeId], references: [orderAddressTypeId])
+    orderAddressTypeId  String            @db.Uuid
+    createdAt           DateTime          @default(now())
+    updatedAt           DateTime          @updatedAt
+    deletedAt           DateTime?
+    OrderItem           OrderItem[]
+}
+
+model OrderAddressType {
+    orderAddressTypeId String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name               String         @unique
+    createdAt          DateTime       @default(now())
+    updatedAt          DateTime       @updatedAt
+    deletedAt          DateTime?
+    OrderAddress       OrderAddress[]
 }
 
 model OrderStatus {
     orderStatusId String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name          String
+    name          String      @unique
     Order         OrderItem[]
     createdAt     DateTime    @default(now())
     updatedAt     DateTime    @updatedAt
     deletedAt     DateTime?
 }
 
-model DeliveryRoute {
-    id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    Warehouse         Warehouse[]
-    DeliveryTracker   DeliveryTracker? @relation(fields: [deliveryTrackerId], references: [id])
-    deliveryTrackerId String?          @db.Uuid
-    createdAt         DateTime         @default(now())
-    updatedAt         DateTime         @updatedAt
-    deletedAt         DateTime?
-}
-
-/// Out for delivery, Delivered, In transit, Pending, Cancelled
-model DeliveryStatus {
-    deliveryStatusId String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    status           String
-    createdAt        DateTime          @default(now())
-    updatedAt        DateTime          @updatedAt
-    deletedAt        DateTime?
-    DeliveryTracker  DeliveryTracker[]
-}
-
-model DeliveryTracker {
-    id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    orderItemId      String          @db.Uuid
-    Order            OrderItem       @relation(fields: [orderItemId], references: [orderItemId])
-    Route            DeliveryRoute[]
-    CurrentLocation  Warehouse       @relation(fields: [warehouseId], references: [warehouseId])
-    Status           DeliveryStatus  @relation(fields: [deliveryStatusId], references: [deliveryStatusId])
-    deliveryAgentId  String          @db.Uuid
-    DeliveryAgent    DeliveryAgent?  @relation(fields: [deliveryAgentId], references: [deliveryAgentId])
-    deliveryStatusId String          @db.Uuid
-    warehouseId      String          @db.Uuid
-    createdAt        DateTime        @default(now())
-    updatedAt        DateTime        @updatedAt
-    deletedAt        DateTime?
-}
-
 model PaymentMethod {
-    paymentMethodId  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name             String
-    Payment          Payment[]
-    Product          Product?  @relation(fields: [productProductId], references: [productId])
-    productProductId String?   @db.Uuid
-    createdAt        DateTime  @default(now())
-    updatedAt        DateTime  @updatedAt
-    deletedAt        DateTime?
+    paymentMethodId                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                               String
+    Payment                            Payment[]
+    productProductId                   String?           @db.Uuid
+    createdAt                          DateTime          @default(now())
+    updatedAt                          DateTime          @updatedAt
+    deletedAt                          DateTime?
+    ProductInventory                   ProductInventory? @relation(fields: [productInventoryProductInventoryId], references: [productInventoryId])
+    productInventoryProductInventoryId String?           @db.Uuid
 }
 
 model Payment {
     paymentId                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    amount                       Float
     PaymentMethod                PaymentMethod @relation(fields: [paymentMethodPaymentMethodId], references: [paymentMethodId])
     paymentMethodId              String        @db.Uuid
     PaymentStatus                PaymentStatus @relation(fields: [paymentStatusPaymentStatusId], references: [paymentStatusId])
@@ -450,6 +676,57 @@ model PaymentType {
     deletedAt     DateTime?
 }
 
+model ProductInventory {
+    productInventoryId String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    storeId            String          @db.Uuid
+    price              Float
+    stock              Int
+    sold               Int
+    comingSoon         Int
+    productId          String          @db.Uuid
+    PaymentMethods     PaymentMethod[]
+    createdAt          DateTime        @default(now())
+    updatedAt          DateTime        @updatedAt
+    deletedAt          DateTime?
+
+    @@unique([storeId, productId])
+}
+
+model DeliveryRoute {
+    deliveryRouteId String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    Warehouse       String[]         @db.Uuid
+    DeliveryTracker DeliveryTracker?
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    deletedAt       DateTime?
+}
+
+/// Out for delivery, Delivered, In transit, Pending, Cancelled
+model DeliveryStatus {
+    deliveryStatusId String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    status           String
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
+    deletedAt        DateTime?
+    DeliveryTracker  DeliveryTracker[]
+}
+
+model DeliveryTracker {
+    id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    orderItemId      String         @unique @db.Uuid
+    Order            OrderItem      @relation(fields: [orderItemId], references: [orderItemId])
+    Route            DeliveryRoute? @relation(fields: [deliveryRouteId], references: [deliveryRouteId])
+    deliveryRouteId  String?        @unique @db.Uuid
+    Status           DeliveryStatus @relation(fields: [deliveryStatusId], references: [deliveryStatusId])
+    deliveryAgentId  String         @db.Uuid
+    deliveryStatusId String         @db.Uuid
+    warehouseId      String         @db.Uuid
+    createdAt        DateTime       @default(now())
+    updatedAt        DateTime       @updatedAt
+    deletedAt        DateTime?
+}
+
+// Analysis and tracking service
 // Types of a action, can be unregistered user, registered user, etc.
 // It contains a json data object, that can be used to store data about the action, in a non-constrained schema
 model Action {
@@ -466,7 +743,6 @@ model Action {
 model UserAction {
     userActionId String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     userId       String     @db.Uuid
-    User         User       @relation(fields: [userId], references: [id])
     Type         ActionType @relation(fields: [actionTypeId], references: [actionTypeId])
     dataObject   Json
     createdAt    DateTime   @default(now())
@@ -485,11 +761,27 @@ model ActionType {
     deletedAt    DateTime?
 }
 
+// share links tracking, etc
+model Links {
+    id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    url       String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+// newspaper service
+model NewsletterSubscribedUser {
+    id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    email     String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+//Offer service
 // Offers for products and its subtypes
 model Offer {
     offerId          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     productId        String             @db.Uuid
-    product          Product            @relation(fields: [productId], references: [productId])
     createdAt        DateTime           @default(now())
     updatedAt        DateTime           @updatedAt
     deletedAt        DateTime?
@@ -510,12 +802,12 @@ model OfferForInterval {
 }
 
 model OfferForRegion {
-    offerForRegionId String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    offerId          String        @db.Uuid
-    Offer            Offer         @relation(fields: [offerId], references: [offerId])
-    TargetRegion     UserAddress[]
-    createdAt        DateTime      @default(now())
-    updatedAt        DateTime      @updatedAt
+    offerForRegionId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    offerId          String    @db.Uuid
+    Offer            Offer     @relation(fields: [offerId], references: [offerId])
+    targetRegionIds  String[]  @db.Uuid
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
     deletedAt        DateTime?
 }
 
@@ -529,25 +821,53 @@ model OfferForUserType {
     deletedAt          DateTime?
 }
 
+// Internal service, company work
 model Employee {
-    employeeId         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    employeeId         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     name               String
-    email              String           @unique
+    email              String            @unique
     password           String
-    Image              Media?           @relation(fields: [mediaMediaId], references: [mediaId])
-    Position           EmployeePosition @relation(fields: [employeePositionId], references: [id])
-    Address            UserAddress      @relation(fields: [addressId], references: [userAddressId])
-    addressId          String           @db.Uuid
+    Position           EmployeePosition  @relation(fields: [employeePositionId], references: [id])
+    addressId          String?           @db.Uuid
+    Address            EmployeeAddress[]
     salary             Int
-    Department         Department       @relation(fields: [departmentID], references: [departmentId])
-    departmentID       String           @db.Uuid
-    mediaMediaId       String?          @db.Uuid
-    employeePositionId String           @db.Uuid
+    Department         Department        @relation(fields: [departmentID], references: [departmentId])
+    departmentID       String            @db.Uuid
+    iamgeId            String?           @db.Uuid
+    employeePositionId String            @db.Uuid
     DeliveryAgent      DeliveryAgent?
 
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
     deletedAt DateTime?
+}
+
+model EmployeeAddress {
+    employeeAddressId     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    line1                 String
+    line2                 String?              @default("")
+    zipcode               String
+    cityId                String               @db.Uuid
+    City                  City                 @relation(fields: [cityId], references: [cityId])
+    latitudeLongitudeId   String               @db.Uuid
+    LatitudeLongitude     LatitudeLongitude    @relation(fields: [latitudeLongitudeId], references: [latitudeLongitudeId])
+    employeeId            String?              @db.Uuid
+    Employee              Employee?            @relation(fields: [employeeId], references: [employeeId])
+    AddressType           EmployeeAddressType? @relation(fields: [employeeAddressTypeId], references: [employeeAddressTypeId])
+    employeeAddressTypeId String?              @db.Uuid
+    createdAt             DateTime             @default(now())
+    updatedAt             DateTime             @updatedAt
+    deletedAt             DateTime?
+}
+
+/// Address type can be home, office, billing, contact, etc.
+model EmployeeAddressType {
+    employeeAddressTypeId String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                  String            @unique
+    EmployeeAddresses     EmployeeAddress[]
+    createdAt             DateTime          @default(now())
+    updatedAt             DateTime          @updatedAt
+    deletedAt             DateTime?
 }
 
 model EmployeePosition {
@@ -575,7 +895,7 @@ model DeliveryAgent {
     employeeId      String                 @unique @db.Uuid
     Employee        Employee               @relation(fields: [employeeId], references: [employeeId])
     Contact         DeliveryAgentContact[]
-    DeliveryTracker DeliveryTracker[]
+    DeliveryTracker String[]               @db.Uuid
 
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
@@ -593,16 +913,13 @@ model DeliveryAgentContact {
 }
 
 model Warehouse {
-    warehouseId                        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name                               String
-    Address                            WarehouseAddress?
-    DeliveryTracker                    DeliveryTracker[]
-    DeliveryRoute                      DeliveryRoute?    @relation(fields: [deliveryRouteId], references: [id])
-    deliveryRouteId                    String?           @db.Uuid
-    warehouseAddressWarehouseAddressId String?           @db.Uuid
-    createdAt                          DateTime          @default(now())
-    updatedAt                          DateTime          @updatedAt
-    deletedAt                          DateTime?
+    warehouseId     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name            String
+    Address         WarehouseAddress?
+    DeliveryTracker String[]          @db.Uuid
+    createdAt       DateTime          @default(now())
+    updatedAt       DateTime          @updatedAt
+    deletedAt       DateTime?
 }
 
 model WarehouseAddress {
@@ -611,7 +928,7 @@ model WarehouseAddress {
     line2                  String?               @default("")
     zipcode                String
     cityId                 String                @db.Uuid
-    City                   City                  @relation(fields: [cityId], references: [id])
+    City                   City                  @relation(fields: [cityId], references: [cityId])
     latitudeLongitudeId    String                @db.Uuid
     latitudeLongitude      LatitudeLongitude     @relation(fields: [latitudeLongitudeId], references: [latitudeLongitudeId])
     Warehouse              Warehouse             @relation(fields: [warehouseId], references: [warehouseId])
@@ -632,10 +949,96 @@ model WarehouseAddressType {
     deletedAt              DateTime?
 }
 
+// fetauredPost Service
+
+model Post {
+    postId      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    title       String
+    description String
+    url         String
+    Media       PostMedia[]
+    tags        PostTag[]
+    featured    Boolean     @default(false)
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+    deletedAt   DateTime?
+}
+
+model PostTag {
+    tagId     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name      String    @unique
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+    Post      Post?     @relation(fields: [postId], references: [postId])
+    postId    String?   @db.Uuid
+}
+
+model PostMedia {
+    postMediaId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    mediaId     String    @db.Uuid
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    deletedAt   DateTime?
+    Post        Post?     @relation(fields: [postId], references: [postId])
+    postId      String?   @db.Uuid
+}
+
+// Banner Service
+
+model Banner {
+    bannerId    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    title       String
+    description String
+    query       String?
+    productIds  String[]      @db.Uuid
+    Media       BannerMedia[]
+    tags        BannerTag[]
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    deletedAt   DateTime?
+}
+
+model BannerTag {
+    tagId     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name      String    @unique
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+    Banner    Banner?   @relation(fields: [bannerId], references: [bannerId])
+    bannerId  String?   @db.Uuid
+}
+
+model BannerMedia {
+    bannerMediaId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    mediaId       String    @db.Uuid
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+    deletedAt     DateTime?
+    Banner        Banner?   @relation(fields: [bannerId], references: [bannerId])
+    bannerId      String?   @db.Uuid
+}
+
+// Favourite Product Service
+
+model FavouriteProduct {
+    favouriteProductId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name               String
+    productId          String    @db.Uuid
+    categoryId         String?   @db.Uuid
+    createdAt          DateTime  @default(now())
+    updatedAt          DateTime  @updatedAt
+    deletedAt          DateTime?
+
+    @@unique([productId, categoryId])
+}
+
+// brand service
+
 model Brand {
     brandId   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     name      String       @unique
-    Products  Product[]
+    Products  String[]     @db.Uuid
     Media     BrandMedia[]
     Tags      BrandTag[]
     createdAt DateTime     @default(now())
@@ -648,41 +1051,9 @@ model BrandMedia {
     brandId      String    @db.Uuid
     Brand        Brand     @relation(fields: [brandId], references: [brandId])
     mediaId      String    @db.Uuid
-    Media        Media     @relation(fields: [mediaId], references: [mediaId])
     createdAt    DateTime  @default(now())
     updatedAt    DateTime  @updatedAt
     deletedAt    DateTime?
-}
-
-model Media {
-    mediaId                 String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    url                     String
-    Brand                   BrandMedia[]
-    Type                    MediaType                 @relation(fields: [mediaTypeMediaTypeId], references: [mediaTypeId])
-    mediaTypeMediaTypeId    String                    @db.Uuid
-    ProductDescriptionMedia ProductDescriptionMedia[]
-    ProductMedia            ProductMedia[]
-    StoreMedia              StoreMedia[]
-    StoreReviewMedia        StoreReviewMedia[]
-    ProductQuestionMedia    ProductQuestionMedia[]
-    ProductAnswerMedia      ProductAnswerMedia[]
-    ProductReviewMedia      ProductReviewMedia[]
-    ProfilePicture          ProfilePicture[]
-    UserAuthentication      UserAuthentication[]
-    Employee                Employee[]
-    createdAt               DateTime                  @default(now())
-    updatedAt               DateTime                  @updatedAt
-    deletedAt               DateTime?
-    CategoryMedia           CategoryMedia[]
-}
-
-model MediaType {
-    mediaTypeId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name        String
-    Media       Media[]
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    deletedAt   DateTime?
 }
 
 model BrandTag {
@@ -694,35 +1065,84 @@ model BrandTag {
     deletedAt  DateTime?
 }
 
+// Media service
+model Media {
+    mediaId              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    url                  String
+    altText              String
+    ownerId              String    @db.Uuid
+    Type                 MediaType @relation(fields: [mediaTypeMediaTypeId], references: [mediaTypeId])
+    mediaTypeMediaTypeId String    @db.Uuid
+    createdAt            DateTime  @default(now())
+    updatedAt            DateTime  @updatedAt
+    deletedAt            DateTime?
+}
+
+model MediaType {
+    mediaTypeId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name        String    @unique
+    Media       Media[]
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    deletedAt   DateTime?
+}
+
+// Store service
 model Store {
-    storeId         String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    storeId         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     name            String
-    userId          String                      @db.Uuid
-    Manager         User                        @relation(fields: [userId], references: [id])
+    userId          String         @db.Uuid
     description     String
     Contacts        StoreContact[]
     Media           StoreMedia[]
-    Products        Product[]
+    Addresses       StoreAddress[]
+    Products        String[]       @db.Uuid
     Tags            StoreTag[]
-    Reviews         StoreReview[]
-    CombinedReview  StoreReviewsCombinedResult?
-    StoreComplaints StoreComplaint[]
-    createdAt       DateTime                    @default(now())
-    updatedAt       DateTime                    @updatedAt
+    Reviews         String[]       @db.Uuid
+    CombinedReview  String?        @db.Uuid
+    StoreComplaints String[]       @db.Uuid
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt
     deletedAt       DateTime?
 }
 
+model StoreAddress {
+    storeAddressId      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    line1               String
+    line2               String?           @default("")
+    zipcode             String
+    cityId              String            @db.Uuid
+    City                City              @relation(fields: [cityId], references: [cityId])
+    latitudeLongitudeId String            @db.Uuid
+    LatitudeLongitude   LatitudeLongitude @relation(fields: [latitudeLongitudeId], references: [latitudeLongitudeId])
+    storeId             String            @db.Uuid
+    Store               Store             @relation(fields: [storeId], references: [storeId])
+    AddressType         StoreAddressType? @relation(fields: [storeAddressTypeId], references: [storeAddressTypeId])
+    storeAddressTypeId  String?           @db.Uuid
+    createdAt           DateTime          @default(now())
+    updatedAt           DateTime          @updatedAt
+    deletedAt           DateTime?
+}
+
+model StoreAddressType {
+    storeAddressTypeId String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name               String         @unique
+    StoreAddress       StoreAddress[]
+    createdAt          DateTime       @default(now())
+    updatedAt          DateTime       @updatedAt
+    deletedAt          DateTime?
+}
+
 model StoreContact {
-    userContactId String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    contactType   String
-    contact       String
-    Store         Store?            @relation(fields: [storeID], references: [storeId])
-    storeID       String?           @db.Uuid
-    ContactType   StoreContactType? @relation(fields: [contactTypeId], references: [id])
-    contactTypeId String?           @db.Uuid
-    createdAt     DateTime          @default(now())
-    updatedAt     DateTime          @updatedAt
-    deletedAt     DateTime?
+    storeContactId String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    contact        String
+    Store          Store?            @relation(fields: [storeID], references: [storeId])
+    storeID        String?           @db.Uuid
+    ContactType    StoreContactType? @relation(fields: [contactTypeId], references: [id])
+    contactTypeId  String?           @db.Uuid
+    createdAt      DateTime          @default(now())
+    updatedAt      DateTime          @updatedAt
+    deletedAt      DateTime?
 }
 
 /// Types can be primary email, secondary email, primary phone, secondary phone, twitter, etc.
@@ -733,18 +1153,6 @@ model StoreContactType {
     createdAt    DateTime       @default(now())
     updatedAt    DateTime       @updatedAt
     deletedAt    DateTime?
-}
-
-model StoreComplaint {
-    storeComplaintId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    userId           String    @db.Uuid
-    User             User      @relation(fields: [userId], references: [id])
-    message          String
-    Store            Store?    @relation(fields: [storeStoreId], references: [storeId])
-    storeStoreId     String?   @db.Uuid
-    createdAt        DateTime  @default(now())
-    updatedAt        DateTime  @updatedAt
-    deletedAt        DateTime?
 }
 
 model StoreTag {
@@ -760,17 +1168,17 @@ model StoreMedia {
     id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     storeId   String    @db.Uuid
     Store     Store     @relation(fields: [storeId], references: [storeId])
-    Media     Media     @relation(fields: [mediaId], references: [mediaId])
     mediaId   String    @db.Uuid
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
     deletedAt DateTime?
 }
 
+// Review Service
+
 model StoreReviewsCombinedResult {
     storeReviewCombinedResultsId String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     storeId                      String        @unique @db.Uuid
-    Store                        Store         @relation(fields: [storeId], references: [storeId])
     rating                       Float
     reviewCount                  Int
     StoreReviews                 StoreReview[]
@@ -782,9 +1190,7 @@ model StoreReviewsCombinedResult {
 model StoreReview {
     storeReviewId                 String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     userId                        String                      @db.Uuid
-    User                          User                        @relation(fields: [userId], references: [id])
     storeId                       String                      @db.Uuid
-    Store                         Store                       @relation(fields: [storeId], references: [storeId])
     rating                        Float
     Media                         StoreReviewMedia[]
     Tags                          StoreReviewTag[]
@@ -808,7 +1214,6 @@ model StoreReviewTag {
 model StoreReviewMedia {
     storeReviewMediaId String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     mediaId            String      @db.Uuid
-    Media              Media       @relation(fields: [mediaId], references: [mediaId])
     storeReviewId      String      @db.Uuid
     StoreReview        StoreReview @relation(fields: [storeReviewId], references: [storeReviewId])
     createdAt          DateTime    @default(now())
@@ -816,6 +1221,7 @@ model StoreReviewMedia {
     deletedAt          DateTime?
 }
 
+// Product Service
 model Category {
     categoryId       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     name             String          @unique
@@ -843,7 +1249,6 @@ model CategoryTag {
 model CategoryMedia {
     id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     mediaId    String    @db.Uuid
-    Media      Media     @relation(fields: [mediaId], references: [mediaId])
     categoryId String    @db.Uuid
     Category   Category  @relation(fields: [categoryId], references: [categoryId])
     createdAt  DateTime  @default(now())
@@ -851,37 +1256,20 @@ model CategoryMedia {
     deletedAt  DateTime?
 }
 
-model ProductInventory {
-    productInventoryId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    price              Float
-    stock              Int
-    sold               Int
-    comingSoon         Int
-    Product            Product?  @relation(fields: [productId], references: [productId])
-    productId          String?   @unique @db.Uuid
-    createdAt          DateTime  @default(now())
-    updatedAt          DateTime  @updatedAt
-    deletedAt          DateTime?
-}
-
 model Product {
-    productId          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name               String
-    productInventoryId String?           @db.Uuid
-    ProductInventory   ProductInventory?
-
+    productId                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    name                          String
     description                   String
     Details                       ProductDetail[]
-    createdAt                     DateTime                                      @default(now())
-    updatedAt                     DateTime                                      @updatedAt
+    createdAt                     DateTime                 @default(now())
+    updatedAt                     DateTime                 @updatedAt
     deletedAt                     DateTime?
     Media                         ProductMedia[]
-    Reviews                       ProductReview[]
-    Questions                     ProductQuestion[]
-    PaymentMethods                PaymentMethod[]
+    Reviews                       String[]                 @db.Uuid
+    Questions                     String[]                 @db.Uuid
     giftOptionAvailable           Boolean
-    WrongInformationReports       ProductWrongInformationReport[]
-    OverallWrongInformationResult ProductWrongInformationReportsCombinedResult?
+    WrongInformationReports       String[]                 @db.Uuid
+    OverallWrongInformationResult String?                  @db.Uuid
     ///  denotes the number of days that it can be replaced, 0 means cant be replaced
     /// same for return frame
     replaceFrame                  Int
@@ -889,66 +1277,65 @@ model Product {
     // ptag is reduntant but allows for faster query to get tags of a product
     ptags                         String[]
     Tags                          ProductTag[]
-    brandId                       String                                        @db.Uuid
-    Brand                         Brand                                         @relation(fields: [brandId], references: [brandId])
+    brandId                       String?                  @db.Uuid
     TechnicalDetails              ProductTechnicalDetail[]
-    IsVariantOf                   Product[]                                     @relation("variants")
-    OtherVariants                 Product[]                                     @relation("variants")
-    CartItems                     CartItem[]
-    SavedForLaterProducts         SavedForLaterProducts[]
-    OrderItems                    OrderItem[]
-    Store                         Store?                                        @relation(fields: [storeId], references: [storeId])
-    storeId                       String?                                       @db.Uuid
-    ProductReviewsCombinedResult  ProductReviewsCombinedResult?
-    ProductReviewFeature          ProductReviewFeature[]
-    WishlistItem                  WishlistItem[]
-    Offer                         Offer[]
-    Category                      Category?                                     @relation(fields: [categoryCategoryId], references: [categoryId])
-    categoryCategoryId            String?                                       @db.Uuid
+    ProductReviewsCombinedResult  String?                  @db.Uuid
+    ProductReviewFeature          String[]                 @db.Uuid
+    Category                      Category?                @relation(fields: [categoryCategoryId], references: [categoryId])
+    categoryCategoryId            String?                  @db.Uuid
+    ProductVariantBasis           ProductVariantBasis[]
+    ProductSKU                    ProductSKU[]
+    originalStoreId               String                   @db.Uuid
+}
+
+// decide whether to have it connected to category or products, who gonna decide these, etc
+model ProductVariantBasis {
+    productVariantBasisId  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    variantBasisName       String
+    Products               Product[]
+    ProductVariantInstance ProductVariantInstance[]
+}
+
+model ProductVariantInstance {
+    productVariantInstanceId String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    variantInstanceName      String
+    Basis                    ProductVariantBasis[]
+    ProductSKU               ProductSKU[]
+}
+
+model ProductSKU {
+    productSKUId           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    productId              String                   @db.Uuid
+    Product                Product                  @relation(fields: [productId], references: [productId])
+    skuName                String
+    // Not used, add in backend
+    Media                  ProductMedia[]
+    originalStoreId        String                   @db.Uuid
+    productInventoryIds    String[]                 @db.Uuid
+    productVariantInstance ProductVariantInstance[]
+    // Just for faster searching, the price defined in productInventory model is final
+    price                  Float
+    stock                  Int                      @default(1) // remove default value, just for development
+    createdAt              DateTime                 @default(now())
+    updatedAt              DateTime                 @updatedAt
+    deletedAt              DateTime?
 }
 
 model ProductMedia {
-    productMediaId   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    productId        String    @db.Uuid
-    Product          Product   @relation(fields: [productProductId], references: [productId])
-    mediaId          String    @db.Uuid
-    Media            Media     @relation(fields: [mediaId], references: [mediaId])
-    productProductId String    @db.Uuid
-    createdAt        DateTime  @default(now())
-    updatedAt        DateTime  @updatedAt
-    deletedAt        DateTime?
-}
-
-model ProductWrongInformationReportsCombinedResult {
-    productWrongInformationReportsOverallId String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name                                    String
-    Product                                 Product                         @relation(fields: [productId], references: [productId])
-    productId                               String                          @unique @db.Uuid
-    count                                   Int
-    ProductWrongInformationReports          ProductWrongInformationReport[]
-    createdAt                               DateTime                        @default(now())
-    updatedAt                               DateTime                        @updatedAt
-    deletedAt                               DateTime?
-}
-
-model ProductWrongInformationReport {
-    productWrongInformationReportId                String                                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name                                           String
-    message                                        String
-    userId                                         String                                        @db.Uuid
-    User                                           User                                          @relation(fields: [userId], references: [id])
-    productWrongInformationReportsCombinedResultId String?                                       @db.Uuid
-    ProductWrongInformationReportsCombinedResult   ProductWrongInformationReportsCombinedResult? @relation(fields: [productWrongInformationReportsCombinedResultId], references: [productWrongInformationReportsOverallId])
-    Product                                        Product?                                      @relation(fields: [productProductId], references: [productId])
-    productProductId                               String?                                       @db.Uuid
-    createdAt                                      DateTime                                      @default(now())
-    updatedAt                                      DateTime                                      @updatedAt
-    deletedAt                                      DateTime?
+    productMediaId         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    productId              String?     @db.Uuid
+    Product                Product?    @relation(fields: [productId], references: [productId])
+    mediaId                String      @db.Uuid
+    createdAt              DateTime    @default(now())
+    updatedAt              DateTime    @updatedAt
+    deletedAt              DateTime?
+    ProductSKU             ProductSKU? @relation(fields: [productSKUProductSKUId], references: [productSKUId])
+    productSKUProductSKUId String?     @db.Uuid
 }
 
 model ProductTag {
     productTagId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    name         String
+    name         String    @unique
     Product      Product[]
     createdAt    DateTime  @default(now())
     updatedAt    DateTime  @updatedAt
@@ -957,6 +1344,7 @@ model ProductTag {
 
 model ProductDetail {
     productDetailId  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    heading          String
     description      String
     Media            ProductDescriptionMedia[]
     Product          Product?                  @relation(fields: [productProductId], references: [productId])
@@ -971,7 +1359,6 @@ model ProductDescriptionMedia {
     productDescriptionId           String        @db.Uuid
     mediaId                        String        @db.Uuid
     ProductDescriptionSingleEntity ProductDetail @relation(fields: [productDescriptionId], references: [productDetailId])
-    Media                          Media         @relation(fields: [mediaId], references: [mediaId])
     createdAt                      DateTime      @default(now())
     updatedAt                      DateTime      @updatedAt
     deletedAt                      DateTime?
@@ -988,6 +1375,7 @@ model ProductTechnicalDetail {
     deletedAt         DateTime?
 }
 
+// Question answer service
 model ProductQuestion {
     productQuestionId String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     userId            String                 @db.Uuid
@@ -996,8 +1384,6 @@ model ProductQuestion {
     downvotes         Int                    @default(0)
     content           String
     Media             ProductQuestionMedia[]
-    Product           Product                @relation(fields: [productId], references: [productId])
-    User              User                   @relation(fields: [userId], references: [id])
     Answers           ProductAnswer[]
     createdAt         DateTime               @default(now())
     updatedAt         DateTime               @updatedAt
@@ -1008,7 +1394,6 @@ model ProductQuestionMedia {
     productQuestionMediaId String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     questionId             String          @db.Uuid
     Question               ProductQuestion @relation(fields: [questionId], references: [productQuestionId])
-    Media                  Media           @relation(fields: [mediaId], references: [mediaId])
     mediaId                String          @db.Uuid
     createdAt              DateTime        @default(now())
     updatedAt              DateTime        @updatedAt
@@ -1023,7 +1408,6 @@ model ProductAnswer {
     downvotes         Int                  @default(0)
     content           String
     Media             ProductAnswerMedia[]
-    User              User                 @relation(fields: [userId], references: [id])
     Question          ProductQuestion      @relation(fields: [questionId], references: [productQuestionId])
     productQuestionId String?              @db.Uuid
     createdAt         DateTime             @default(now())
@@ -1035,24 +1419,30 @@ model ProductAnswerMedia {
     productAnswerMediaId String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     answerId             String        @db.Uuid
     Answer               ProductAnswer @relation(fields: [answerId], references: [productAnswerId])
-    Media                Media         @relation(fields: [mediaId], references: [mediaId])
     mediaId              String        @db.Uuid
     createdAt            DateTime      @default(now())
     updatedAt            DateTime      @updatedAt
     deletedAt            DateTime?
 }
 
+// product review service
+
 model ProductReviewsCombinedResult {
-    productReviewsCombinedResultsId String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    rating                          Float
-    reviewsCount                    Int
-    Features                        ProductFeaturesRatingCombinedResult[]
-    productId                       String                                @unique @db.Uuid
-    Product                         Product                               @relation(fields: [productId], references: [productId])
-    productReviews                  ProductReview[]
-    createdAt                       DateTime                              @default(now())
-    updatedAt                       DateTime                              @updatedAt
-    deletedAt                       DateTime?
+    productReviewsCombinedResultId String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    rating                         Float
+    // add a count for reviews number at values like 1, 2 , 3, 4, 5
+    reviewsCount                   Int                                   @default(0)
+    reviewCount1Star               Int                                   @default(0)
+    reviewCount2Star               Int                                   @default(0)
+    reviewCount3Star               Int                                   @default(0)
+    reviewCount4Star               Int                                   @default(0)
+    reviewCount5Star               Int                                   @default(0)
+    Features                       ProductFeaturesRatingCombinedResult[]
+    productId                      String                                @unique @db.Uuid
+    productReviews                 ProductReview[]
+    createdAt                      DateTime                              @default(now())
+    updatedAt                      DateTime                              @updatedAt
+    deletedAt                      DateTime?
 }
 
 model ProductFeaturesRatingCombinedResult {
@@ -1061,31 +1451,31 @@ model ProductFeaturesRatingCombinedResult {
     reviewsCount                          Int
     featureId                             String                       @db.Uuid
     Feature                               ProductReviewFeature         @relation(fields: [featureId], references: [productReviewFeatureId])
-    productReviewsCombinedResultsId       String                       @db.Uuid
-    ProductReviewsCombinedResults         ProductReviewsCombinedResult @relation(fields: [productReviewsCombinedResultsId], references: [productReviewsCombinedResultsId])
+    productReviewsCombinedResultId        String                       @db.Uuid
+    ProductReviewsCombinedResults         ProductReviewsCombinedResult @relation(fields: [productReviewsCombinedResultId], references: [productReviewsCombinedResultId])
     createdAt                             DateTime                     @default(now())
     updatedAt                             DateTime                     @updatedAt
     deletedAt                             DateTime?
 }
 
 model ProductReview {
-    productReviewId                 String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    productId                       String                        @db.Uuid
-    userId                          String                        @db.Uuid
-    Product                         Product                       @relation(fields: [productId], references: [productId])
-    User                            User                          @relation(fields: [userId], references: [id])
+    productReviewId                String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    productId                      String                        @db.Uuid
+    userId                         String                        @db.Uuid
     /// In range of 0 to 5, using check constraint in migrate file
-    overallRating                   Float
-    content                         String
-    Features                        ProductReviewFeatureRating[]
-    Tags                            ProductReviewTag[]
-    Media                           ProductReviewMedia[]
-    verifiedPurchase                Boolean                       @default(false)
-    ProductReviewsCombinedResult    ProductReviewsCombinedResult? @relation(fields: [productReviewsCombinedResultsId], references: [productReviewsCombinedResultsId])
-    productReviewsCombinedResultsId String?                       @db.Uuid
-    createdAt                       DateTime                      @default(now())
-    updatedAt                       DateTime                      @updatedAt
-    deletedAt                       DateTime?
+    overallRating                  Float
+    content                        String
+    Features                       ProductReviewFeatureRating[]
+    Tags                           ProductReviewTag[]
+    Media                          ProductReviewMedia[]
+    verifiedPurchase               Boolean                       @default(false)
+    ProductReviewsCombinedResult   ProductReviewsCombinedResult? @relation(fields: [productReviewsCombinedResultId], references: [productReviewsCombinedResultId])
+    productReviewsCombinedResultId String?                       @db.Uuid
+    createdAt                      DateTime                      @default(now())
+    updatedAt                      DateTime                      @updatedAt
+    deletedAt                      DateTime?
+
+    @@unique([productId, userId])
 }
 
 model ProductReviewTag {
@@ -1100,7 +1490,6 @@ model ProductReviewTag {
 model ProductReviewMedia {
     productReviewMediaId String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     mediaId              String        @db.Uuid
-    Media                Media         @relation(fields: [mediaId], references: [mediaId])
     productReviewId      String        @db.Uuid
     ProductReview        ProductReview @relation(fields: [productReviewId], references: [productReviewId])
     createdAt            DateTime      @default(now())
@@ -1124,7 +1513,6 @@ model ProductReviewFeature {
     productReviewFeatureId              String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     description                         String
     productId                           String                                @db.Uuid
-    Product                             Product                               @relation(fields: [productId], references: [productId])
     Type                                ProductReviewFeatureType              @relation(fields: [productReviewFeatureTypeId], references: [type])
     Ratings                             ProductReviewFeatureRating[]
     ProductFeaturesRatingCombinedResult ProductFeaturesRatingCombinedResult[]
@@ -1142,6 +1530,8 @@ model ProductReviewFeatureType {
     deletedAt            DateTime?
 }
 
+// general address tables
+
 model LatitudeLongitude {
     latitudeLongitudeId String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     lat                 Float
@@ -1151,26 +1541,36 @@ model LatitudeLongitude {
     createdAt           DateTime           @default(now())
     updatedAt           DateTime           @updatedAt
     deletedAt           DateTime?
+    EmployeeAddress     EmployeeAddress[]
+    StoreAddress        StoreAddress[]
+    WishlistAddress     WishlistAddress[]
+    OrderAddress        OrderAddress[]
+
+    @@unique([lat, long])
 }
 
 model City {
-    id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    cityId           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     name             String
     stateId          String             @db.Uuid
-    State            State              @relation(fields: [stateId], references: [id])
+    State            State              @relation(fields: [stateId], references: [stateId])
     UserAddress      UserAddress[]
     WarehouseAddress WarehouseAddress[]
     createdAt        DateTime           @default(now())
     updatedAt        DateTime           @updatedAt
     deletedAt        DateTime?
+    EmployeeAddress  EmployeeAddress[]
+    StoreAddress     StoreAddress[]
+    WishlistAddress  WishlistAddress[]
+    OrderAddress     OrderAddress[]
 }
 
 model State {
-    id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    stateId    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
     /// store codes when possible and if not then name, be consistent for a country
     identifier String
     countryId  String    @db.Uuid
-    Country    Country   @relation(fields: [countryId], references: [id])
+    Country    Country   @relation(fields: [countryId], references: [countryId])
     City       City[]
     createdAt  DateTime  @default(now())
     updatedAt  DateTime  @updatedAt
@@ -1178,27 +1578,10 @@ model State {
 }
 
 model Country {
-    id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    code      String    @unique @db.Char(2)
+    countryId String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    code      String    @unique
     State     State[]
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
     deletedAt DateTime?
-}
-
-model VerificationToken {
-    identifier String
-    type       String
-    token      String    @id
-    expires    DateTime
-    createdAt  DateTime  @default(now())
-    updatedAt  DateTime  @updatedAt
-    deletedAt  DateTime?
-}
-
-model Links {
-    id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-    url       String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
 }

@@ -21,6 +21,9 @@ export default defineNextConfig({
     locales: ["en"],
     defaultLocale: "en",
   },
+  images: {
+    domains: ["localhost"],
+  },
 });
 
 // module.exports = {

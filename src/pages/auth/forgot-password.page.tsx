@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import validator from "./utils";
+import validator from "../utils/utils";
 import ExclamationCircleIcon from "@heroicons/react/24/outline/ExclamationCircleIcon";
 import { trpc } from "../../utils/trpc";
 import Modal from "../../components/Modal";
@@ -19,7 +19,8 @@ const SignIn: NextPage = () => {
   const [inputNewPasswordError, setInputNewPasswordError] = useState(false);
   const [inputConfirmNewPasswordError, setInputConfirmNewPasswordError] =
     useState(false);
-  const trpcSubmitPasswordReset = trpc.useMutation(["auth.forgotPassword"]);
+  // const trpcSubmitPasswordReset = trpc.useMutation(["auth.forgotPassword"]);
+  const trpcSubmitPasswordReset = trpc.useMutation(["auth.forgotPasswordV1"]);
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

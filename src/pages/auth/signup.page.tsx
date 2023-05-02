@@ -11,7 +11,7 @@ import Image from "next/image";
 import { LOGOS } from "./Logos";
 import ExclamationCircleIcon from "@heroicons/react/24/outline/ExclamationCircleIcon";
 import Modal from "../../components/Modal";
-import validator from "./utils";
+import validator from "../utils/utils";
 
 const SignUp: NextPage<{ providers: Provider | null }> = ({ providers }) => {
   const [oAuthProvidersNumber, setOAuthProviderNumber] = useState(0);
@@ -19,6 +19,7 @@ const SignUp: NextPage<{ providers: Provider | null }> = ({ providers }) => {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   1;
+  // const trpcSignUP = trpc.useMutation(["auth.signupV1"]);
   const trpcSignUP = trpc.useMutation(["auth.signup"]);
 
   const [inputEmailError, setInputEmailError] = useState(false);
